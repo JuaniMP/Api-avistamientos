@@ -5,6 +5,7 @@ Taller de Ingeniería de Software 2 (Sesión 17). API REST para registrar avista
 ## Requisitos
 
 - Java 21 o superior (`java -version` para verificar)
+- Conexión a internet la primera vez que se ejecuta (para descargar las librerías)
 - No hace falta instalar Maven ni ninguna base de datos: el proyecto trae el Maven Wrapper y H2 se crea sola en la carpeta `data/`.
 
 ## Cómo ejecutarla
@@ -14,11 +15,32 @@ Taller de Ingeniería de Software 2 (Sesión 17). API REST para registrar avista
    git clone https://github.com/JuaniMP/Api-avistamientos.git
    cd Api-avistamientos
    ```
-2. Levantar la API:
-   - Windows: `mvnw.cmd spring-boot:run`
-   - Linux / Mac: `./mvnw spring-boot:run`
+2. Levantar la API. El comando cambia según la terminal:
 
-La API queda corriendo en `http://localhost:8080`.
+   | Terminal | Comando |
+   |---|---|
+   | CMD (Windows) | `mvnw.cmd spring-boot:run` |
+   | PowerShell (Windows) | `.\mvnw.cmd spring-boot:run` |
+   | Git Bash, Linux o Mac | `./mvnw spring-boot:run` |
+
+La primera vez tarda un poco porque descarga Maven y las librerías. Cuando en la consola salga `Started AvistamientosApplication`, la API queda corriendo en `http://localhost:8080`.
+
+Para detenerla: `Ctrl + C`.
+
+## Estructura del proyecto
+
+```
+src/main/java/co/edu/bosque/avistamientos/
+├── AvistamientosApplication.java           Punto de entrada: arranca la aplicación
+├── entity/Avistamiento.java                El modelo: campos, reglas de validación y tabla en la base
+├── repository/AvistamientoRepository.java  Habla con la base de datos (guardar, buscar, borrar)
+├── controller/AvistamientoController.java  Los endpoints: recibe las peticiones HTTP y responde en JSON
+└── exception/ManejadorErrores.java         Convierte los errores de validación en respuestas 400 con mensajes claros
+
+src/main/resources/application.properties   Configuración de la base H2 (guardada en archivo)
+src/test/java/...                           Pruebas de integración de todos los endpoints
+src/test/resources/application.properties   Base H2 en memoria, solo para las pruebas
+```
 
 ## Modelo
 
@@ -45,7 +67,7 @@ Cada avistamiento tiene:
 
 ## Ejemplos con curl
 
-> Los ejemplos usan comillas simples, así que funcionan en Git Bash, Linux o Mac. El `-i` muestra el código de estado de la respuesta.
+> Los ejemplos usan comillas simples, así que funcionan en Git Bash, Linux o Mac. En Windows lo más fácil es correrlos desde Git Bash (también se pueden probar con Postman). El `-i` muestra el código de estado de la respuesta.
 
 **Listar todos**
 ```bash
@@ -109,13 +131,56 @@ Respuesta:
 ```
 
 Si el `id` no existe (en GET, PUT o DELETE), la respuesta es **404** sin cuerpo.
+
+## Decisiones de diseño
+
+- **H2 guardada en archivo (`data/`)**: los datos no se pierden al reiniciar la API, y no hay que instalar ni configurar ningún motor de base de datos. La tabla la crea Spring sola a partir de la clase `Avistamiento` (`ddl-auto=update`).
+- **El `id` lo pone la base**: en el POST se ignora cualquier `id` que venga en el body, para que nadie pueda sobrescribir un avistamiento existente al "crear" uno nuevo.
+- **PUT reemplaza el avistamiento completo**: por eso valida todos los campos y responde 400 si falta alguno.
+- **DELETE responde 204**: la operación salió bien, pero no hay nada que devolver en el cuerpo.
+- **La URL indica el recurso y el método HTTP indica la acción**: todas las rutas usan `/avistamientos` (en plural) y lo que cambia es GET, POST, PUT o DELETE.
+- **La fecha es `LocalDate` y no texto**: así Java comprueba que sea una fecha real (rechaza `2026-13-45`) y se puede validar que no sea futura. En el JSON se sigue viendo como `"2026-09-29"`.
+- **Las validaciones van en la entidad, no en el controller**: las reglas quedan en un solo lugar y sirven igual para POST y PUT. El `@Valid` del controller es el que las activa.
+- **Manejo de errores en una clase aparte** (`ManejadorErrores`, con `@RestControllerAdvice`): los errores también se responden en JSON y dicen qué corregir, sin llenar el controller de `try/catch`.
+- **El resumen usa un `TreeMap`**: cuenta los avistamientos por especie y los devuelve ordenados alfabéticamente.
+
 ## Pruebas
 
-El proyecto trae 13 pruebas de integración (en `src/test/java`) que llaman a cada endpoint y revisan que responda el código correcto (200, 201, 204, 400 y 404), incluyendo las validaciones y el resumen. Usan una base H2 en memoria, así que no tocan los datos de `data/`.
+El proyecto trae 13 pruebas de integración (en `src/test/java`) que llaman a cada endpoint y revisan que responda el código correcto (200, 201, 204, 400 y 404), incluyendo las validaciones y el resumen. Además está la prueba que trae Spring por defecto, que revisa que la aplicación arranque. Usan una base H2 en memoria, así que no tocan los datos de `data/`.
 
 Para correrlas:
-- Windows: `mvnw.cmd test`
-- Linux / Mac: `./mvnw test`
+
+| Terminal | Comando |
+|---|---|
+| CMD (Windows) | `mvnw.cmd test` |
+| PowerShell (Windows) | `.\mvnw.cmd test` |
+| Git Bash, Linux o Mac | `./mvnw test` |
+
+## Verificación en un computador limpio
+
+Para comprobar que la API funciona siguiendo solo este README, se probó en **GitHub Codespaces** (un Linux nuevo, sin nada del proyecto instalado, con Java 25): se clonó el repositorio, se levantó con `./mvnw spring-boot:run` y se probaron los endpoints con curl.
+
+Resultado de los curl:
+```
+GET  /avistamientos           ->  HTTP/1.1 200   []
+POST /avistamientos           ->  HTTP/1.1 201   {"especie":"colibri","fecha":"2026-09-29","id":1,"lugar":"Humedal La Conejera","observador":"Juanita"}
+GET  /avistamientos/resumen   ->  HTTP/1.1 200   {"colibri":1}
+```
+
+Resultado de `./mvnw test`:
+```
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+```
+
+También se probó en Windows con Java 26, desde IntelliJ IDEA y Postman.
+
+## Problemas comunes
+
+- **`Port 8080 was already in use`**: ya hay otra instancia de la API (u otro programa) usando el puerto. Detener la otra instancia, o levantar esta en otro puerto: `./mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8081`
+- **`java: command not found` o error de `JAVA_HOME`**: falta instalar Java 21 o superior, o no está en el PATH. Verificar con `java -version`.
+- **`./mvnw: Permission denied`** (Linux o Mac): darle permiso de ejecución con `chmod +x mvnw`.
+- **Se quieren borrar todos los datos**: detener la API y borrar la carpeta `data/`. Se vuelve a crear vacía al levantar la API.
 
 ## Uso de IA
 

@@ -109,6 +109,13 @@ Respuesta:
 ```
 
 Si el `id` no existe (en GET, PUT o DELETE), la respuesta es **404** sin cuerpo.
+## Pruebas
+
+El proyecto trae 13 pruebas de integración (en `src/test/java`) que llaman a cada endpoint y revisan que responda el código correcto (200, 201, 204, 400 y 404), incluyendo las validaciones y el resumen. Usan una base H2 en memoria, así que no tocan los datos de `data/`.
+
+Para correrlas:
+- Windows: `mvnw.cmd test`
+- Linux / Mac: `./mvnw test`
 
 ## Uso de IA
 

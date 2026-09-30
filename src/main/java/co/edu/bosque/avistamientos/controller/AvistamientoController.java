@@ -22,13 +22,13 @@ public class AvistamientoController {
         this.repository = repository;
     }
 
-    // GET /avistamientos -> 200 con la lista
+
     @GetMapping
     public List<Avistamiento> listar() {
         return repository.findAll();
     }
 
-    // GET /avistamientos/{id} -> 200 con el avistamiento, o 404
+
     @GetMapping("/{id}")
     public ResponseEntity<Avistamiento> obtener(@PathVariable Long id) {
         Optional<Avistamiento> encontrado = repository.findById(id);
@@ -37,7 +37,7 @@ public class AvistamientoController {
         }
         return ResponseEntity.ok(encontrado.get());
     }
-    // GET /avistamientos/resumen -> 200 con cuántos hay por especie
+
     @GetMapping("/resumen")
     public Map<String, Long> resumen() {
         Map<String, Long> conteo = new TreeMap<>();
@@ -48,7 +48,7 @@ public class AvistamientoController {
         return conteo;
     }
 
-    // POST /avistamientos -> 201 con el creado, o 400 si faltan datos
+
     @PostMapping
     public ResponseEntity<Avistamiento> crear(@Valid @RequestBody Avistamiento avistamiento) {
         avistamiento.setId(null);
@@ -56,7 +56,7 @@ public class AvistamientoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(guardado);
     }
 
-    // PUT /avistamientos/{id} -> 200 con el actualizado, o 404
+
     @PutMapping("/{id}")
     public ResponseEntity<Avistamiento> actualizar(@PathVariable Long id,
                                                    @Valid @RequestBody Avistamiento datos) {
@@ -68,7 +68,7 @@ public class AvistamientoController {
         return ResponseEntity.ok(actualizado);
     }
 
-    // DELETE /avistamientos/{id} -> 204, o 404
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         if (!repository.existsById(id)) {

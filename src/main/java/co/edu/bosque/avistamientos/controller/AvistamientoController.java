@@ -6,6 +6,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.Map;
+import java.util.TreeMap;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +36,16 @@ public class AvistamientoController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(encontrado.get());
+    }
+    // GET /avistamientos/resumen -> 200 con cuántos hay por especie
+    @GetMapping("/resumen")
+    public Map<String, Long> resumen() {
+        Map<String, Long> conteo = new TreeMap<>();
+        for (Avistamiento a : repository.findAll()) {
+            String especie = a.getEspecie();
+            conteo.put(especie, conteo.getOrDefault(especie, 0L) + 1);
+        }
+        return conteo;
     }
 
     // POST /avistamientos -> 201 con el creado, o 400 si faltan datos

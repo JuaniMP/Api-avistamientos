@@ -38,6 +38,7 @@ Cada avistamiento tiene:
 |---|---|---|
 | GET | /avistamientos | 200 con la lista |
 | GET | /avistamientos/{id} | 200 con el avistamiento, o 404 |
+| GET | /avistamientos/resumen | 200 con cuántos avistamientos hay por especie |
 | POST | /avistamientos | 201 con el creado, o 400 si faltan datos |
 | PUT | /avistamientos/{id} | 200 con el actualizado, 404 si no existe, o 400 si faltan datos |
 | DELETE | /avistamientos/{id} | 204, o 404 si no existe |
@@ -54,6 +55,14 @@ curl -i http://localhost:8080/avistamientos
 **Ver uno**
 ```bash
 curl -i http://localhost:8080/avistamientos/1
+```
+**Resumen por especie**
+```bash
+curl -i http://localhost:8080/avistamientos/resumen
+```
+Respuesta de ejemplo:
+```json
+{"colibrí": 2, "tucán": 1}
 ```
 
 **Registrar uno**
@@ -74,7 +83,6 @@ curl -i -X PUT http://localhost:8080/avistamientos/1 \
 ```bash
 curl -i -X DELETE http://localhost:8080/avistamientos/1
 ```
-
 ## Uso de IA
 
 Usé Claude (modelo Opus 5.5, de Anthropic) como apoyo para entender los conceptos y guiarme paso a paso en la construcción del proyecto.

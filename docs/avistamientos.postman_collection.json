@@ -1,0 +1,160 @@
+{
+  "info": {
+    "_postman_id": "d35b8c20-7f05-4260-935a-7da1388bcf84",
+    "name": "avistamientos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "44973189",
+    "_collection_link": "https://go.postman.co/collection/44973189-d35b8c20-7f05-4260-935a-7da1388bcf84?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Saber cuantos avistamientos hay",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": ""
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Avistamientos guardaarlos",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "  {\r\n    \"especie\": \"colibrí\",\r\n    \"lugar\": \"Humedal La Conejera\",\r\n    \"fecha\": \"2026-09-29\",\r\n    \"observador\": \"Juanita\"\r\n  }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/avistamientos",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "avistamientos"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Buscar con id 1 los avistamientos",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": ""
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "No existe el id 99 porqu eno s eha creado",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": ""
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "se actualizo id 1",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "   {\r\n     \"especie\": \"tucán\",\r\n     \"lugar\": \"Parque Nacional Chingaza\",\r\n     \"fecha\": \"2026-09-28\",\r\n     \"observador\": \"Juanita\"\r\n   }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/avistamientos/1",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "avistamientos",
+            "1"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete de un avistamientos 2",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/avistamientos/2",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "avistamientos",
+            "2"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "reesumen de especies",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": ""
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Viendo fallas",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"especie\": \"colibrí\",\r\n  \"lugar\": \"Humedal La Conejera\",\r\n  \"fecha\": \"2026-13-45\",\r\n  \"observador\": \"Juanita\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8080/avistamientos",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "avistamientos"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

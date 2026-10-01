@@ -67,7 +67,7 @@ Cada avistamiento tiene:
 
 ## Ejemplos con curl
 
-> Los ejemplos usan comillas simples, así que funcionan en Git Bash, Linux o Mac. En Windows lo más fácil es correrlos desde Git Bash (también se pueden probar con Postman). El `-i` muestra el código de estado de la respuesta.
+> Los ejemplos usan comillas simples, así que funcionan en Git Bash, Linux o Mac. En Windows lo más fácil es correrlos desde Git Bash (también se pueden probar con la colección de Postman, ver más abajo). El `-i` muestra el código de estado de la respuesta.
 
 **Listar todos**
 ```bash
@@ -131,6 +131,32 @@ Respuesta:
 ```
 
 Si el `id` no existe (en GET, PUT o DELETE), la respuesta es **404** sin cuerpo.
+
+## Colección de Postman
+
+En la carpeta `docs/` está el archivo `avistamientos.postman_collection.json`, con todas las peticiones listas para probar la API desde Postman sin escribir nada.
+
+**Cómo abrirla:**
+1. Levantar la API (ver "Cómo ejecutarla").
+2. En Postman: botón **Import** → arrastrar el archivo `docs/avistamientos.postman_collection.json`.
+3. Aparece la colección **API Avistamientos** en el panel de la izquierda.
+
+**Qué tiene:** 10 peticiones numeradas, cada una con el código que debe responder entre paréntesis:
+
+| # | Petición | Respuesta esperada |
+|---|---|---|
+| 1 | Registrar avistamiento | 201 |
+| 2 | Listar avistamientos | 200 |
+| 3 | Ver avistamiento 1 | 200 |
+| 4 | Ver avistamiento inexistente (id 99) | 404 |
+| 5 | Actualizar avistamiento 1 | 200 |
+| 6 | Resumen por especie | 200 |
+| 7 | Registrar con especie inválida (`------`) | 400 |
+| 8 | Registrar con fecha que no existe (`2026-13-45`) | 400 |
+| 9 | Eliminar avistamiento 1 | 204 |
+| 10 | Eliminar avistamiento ya borrado | 404 |
+
+Con la base vacía (sin carpeta `data/`), se pueden correr en orden de la 1 a la 10, una por una o todas juntas con **Run collection**. La dirección de la API está en la variable `baseUrl` de la colección (`http://localhost:8080`), por si se levanta en otro puerto.
 
 ## Decisiones de diseño
 

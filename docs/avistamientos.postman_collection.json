@@ -1,160 +1,259 @@
 {
   "info": {
     "_postman_id": "d35b8c20-7f05-4260-935a-7da1388bcf84",
-    "name": "avistamientos",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "44973189",
-    "_collection_link": "https://go.postman.co/collection/44973189-d35b8c20-7f05-4260-935a-7da1388bcf84?source=collection_link"
+    "name": "API Avistamientos",
+    "description": "Peticiones para probar la API de avistamientos de aves. Están en orden: con la base vacía, se pueden correr una por una de arriba hacia abajo (o con Run collection) y cada una debe dar el código que dice entre paréntesis.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Saber cuantos avistamientos hay",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": ""
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Avistamientos guardaarlos",
+      "name": "1. Registrar avistamiento (201)",
       "request": {
         "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "  {\r\n    \"especie\": \"colibrí\",\r\n    \"lugar\": \"Humedal La Conejera\",\r\n    \"fecha\": \"2026-09-29\",\r\n    \"observador\": \"Juanita\"\r\n  }",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
           }
-        },
+        ],
         "url": {
-          "raw": "http://localhost:8080/avistamientos",
-          "protocol": "http",
+          "raw": "{{baseUrl}}/avistamientos",
           "host": [
-            "localhost"
+            "{{baseUrl}}"
           ],
-          "port": "8080",
           "path": [
             "avistamientos"
           ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Buscar con id 1 los avistamientos",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": ""
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "No existe el id 99 porqu eno s eha creado",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": ""
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "se actualizo id 1",
-      "request": {
-        "method": "PUT",
-        "header": [],
+        },
         "body": {
           "mode": "raw",
-          "raw": "   {\r\n     \"especie\": \"tucán\",\r\n     \"lugar\": \"Parque Nacional Chingaza\",\r\n     \"fecha\": \"2026-09-28\",\r\n     \"observador\": \"Juanita\"\r\n   }",
+          "raw": "{\n  \"especie\": \"colibrí\",\n  \"lugar\": \"Humedal La Conejera\",\n  \"fecha\": \"2026-09-29\",\n  \"observador\": \"Juanita\"\n}",
           "options": {
             "raw": {
               "language": "json"
             }
           }
         },
+        "description": "Crea un avistamiento. Responde 201 con el avistamiento y el id que le asignó la base."
+      },
+      "response": []
+    },
+    {
+      "name": "2. Listar avistamientos (200)",
+      "request": {
+        "method": "GET",
+        "header": [],
         "url": {
-          "raw": "http://localhost:8080/avistamientos/1",
-          "protocol": "http",
+          "raw": "{{baseUrl}}/avistamientos",
           "host": [
-            "localhost"
+            "{{baseUrl}}"
           ],
-          "port": "8080",
+          "path": [
+            "avistamientos"
+          ]
+        },
+        "description": "Devuelve la lista de todos los avistamientos."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Ver avistamiento 1 (200)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/avistamientos/1",
+          "host": [
+            "{{baseUrl}}"
+          ],
           "path": [
             "avistamientos",
             "1"
           ]
-        }
+        },
+        "description": "Devuelve el avistamiento con id 1."
       },
       "response": []
     },
     {
-      "name": "Delete de un avistamientos 2",
-      "request": {
-        "method": "DELETE",
-        "header": [],
-        "url": {
-          "raw": "http://localhost:8080/avistamientos/2",
-          "protocol": "http",
-          "host": [
-            "localhost"
-          ],
-          "port": "8080",
-          "path": [
-            "avistamientos",
-            "2"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "reesumen de especies",
+      "name": "4. Ver avistamiento inexistente (404)",
       "request": {
         "method": "GET",
         "header": [],
         "url": {
-          "raw": ""
-        }
+          "raw": "{{baseUrl}}/avistamientos/99",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "avistamientos",
+            "99"
+          ]
+        },
+        "description": "El id 99 no existe, así que responde 404."
       },
       "response": []
     },
     {
-      "name": "Viendo fallas",
+      "name": "5. Actualizar avistamiento 1 (200)",
       "request": {
-        "method": "POST",
-        "header": [],
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/avistamientos/1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "avistamientos",
+            "1"
+          ]
+        },
         "body": {
           "mode": "raw",
-          "raw": "{\r\n  \"especie\": \"colibrí\",\r\n  \"lugar\": \"Humedal La Conejera\",\r\n  \"fecha\": \"2026-13-45\",\r\n  \"observador\": \"Juanita\"\r\n}",
+          "raw": "{\n  \"especie\": \"tucán\",\n  \"lugar\": \"Parque Nacional Chingaza\",\n  \"fecha\": \"2026-09-28\",\n  \"observador\": \"Juanita\"\n}",
           "options": {
             "raw": {
               "language": "json"
             }
           }
         },
+        "description": "Reemplaza todos los datos del avistamiento 1."
+      },
+      "response": []
+    },
+    {
+      "name": "6. Resumen por especie (200)",
+      "request": {
+        "method": "GET",
+        "header": [],
         "url": {
-          "raw": "http://localhost:8080/avistamientos",
-          "protocol": "http",
+          "raw": "{{baseUrl}}/avistamientos/resumen",
           "host": [
-            "localhost"
+            "{{baseUrl}}"
           ],
-          "port": "8080",
+          "path": [
+            "avistamientos",
+            "resumen"
+          ]
+        },
+        "description": "Cuenta cuántos avistamientos hay de cada especie."
+      },
+      "response": []
+    },
+    {
+      "name": "7. Registrar con especie inválida (400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/avistamientos",
+          "host": [
+            "{{baseUrl}}"
+          ],
           "path": [
             "avistamientos"
           ]
-        }
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"especie\": \"------\",\n  \"lugar\": \"Humedal La Conejera\",\n  \"fecha\": \"2026-09-29\",\n  \"observador\": \"Juanita\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "La especie no puede tener solo símbolos. Responde 400 con el mensaje del campo que falló."
       },
       "response": []
+    },
+    {
+      "name": "8. Registrar con fecha que no existe (400)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/avistamientos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "avistamientos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"especie\": \"colibrí\",\n  \"lugar\": \"Humedal La Conejera\",\n  \"fecha\": \"2026-13-45\",\n  \"observador\": \"Juanita\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "description": "El mes 13 no existe. Responde 400 indicando que el formato de la fecha es incorrecto."
+      },
+      "response": []
+    },
+    {
+      "name": "9. Eliminar avistamiento 1 (204)",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/avistamientos/1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "avistamientos",
+            "1"
+          ]
+        },
+        "description": "Borra el avistamiento 1. Responde 204 sin cuerpo."
+      },
+      "response": []
+    },
+    {
+      "name": "10. Eliminar avistamiento ya borrado (404)",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/avistamientos/1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "avistamientos",
+            "1"
+          ]
+        },
+        "description": "El avistamiento 1 ya se borró en la petición anterior, así que responde 404."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
     }
   ]
 }

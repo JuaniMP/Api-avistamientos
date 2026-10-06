@@ -77,7 +77,7 @@ La API tiene su contrato OpenAPI, generado automáticamente a partir del código
 | Contrato OpenAPI en JSON | `http://localhost:8080/v3/api-docs` |
 | Contrato OpenAPI en YAML | `http://localhost:8080/v3/api-docs.yaml` |
 
-En Swagger UI cada endpoint muestra qué recibe, qué responde y con qué códigos (200, 201, 204, 400, 404). Para probar uno: abrirlo → **Try it out** → **Execute**. Los campos ya vienen con datos de ejemplo válidos.
+En Swagger UI cada endpoint muestra qué recibe, qué responde y con qué códigos (200, 201, 204, 400, 404). El 400 aparece solo en el POST y el PUT, que son los únicos que reciben un body, y muestra un ejemplo del JSON de error. Para probar uno: abrirlo → **Try it out** → **Execute**. Los campos ya vienen con datos de ejemplo válidos.
 
 Además hay una copia del contrato en `docs/openapi.yaml`, para poder leerlo sin levantar la API (por ejemplo, pegándolo en [editor.swagger.io](https://editor.swagger.io/)).
 
@@ -185,6 +185,7 @@ Con la base vacía (sin carpeta `data/`), se pueden correr en orden de la 1 a la
 - **Las validaciones van en la entidad, no en el controller**: las reglas quedan en un solo lugar y sirven igual para POST y PUT. El `@Valid` del controller es el que las activa.
 - **Manejo de errores en una clase aparte** (`ManejadorErrores`, con `@RestControllerAdvice`): los errores también se responden en JSON y dicen qué corregir, sin llenar el controller de `try/catch`.
 - **El contrato OpenAPI se genera desde el código (code-first)**: como la API ya estaba hecha, springdoc lee el controller, la entidad y sus validaciones y arma el contrato solo. Las anotaciones `@Operation`, `@ApiResponse` y `@Schema` solo lo documentan (resúmenes, códigos posibles y ejemplos); no cambian cómo funciona la API.
+- **El 400 se documenta solo donde puede pasar**: con `springdoc.override-with-generic-response=false` (en `application.properties`), springdoc no le agrega a todos los endpoints los errores del `ManejadorErrores`. Así el contrato no promete un 400 en los GET o el DELETE, que no reciben body y nunca lo devuelven.
 - **El resumen usa un `TreeMap`**: cuenta los avistamientos por especie y los devuelve ordenados alfabéticamente.
 
 ## Pruebas

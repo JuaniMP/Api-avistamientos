@@ -4,6 +4,8 @@ import co.edu.bosque.avistamientos.entity.Avistamiento;
 import co.edu.bosque.avistamientos.repository.AvistamientoRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -62,7 +64,9 @@ public class AvistamientoController {
     @PostMapping
     @Operation(summary = "Registrar un avistamiento")
     @ApiResponse(responseCode = "201", description = "Avistamiento creado")
-    @ApiResponse(responseCode = "400", description = "Datos inválidos")
+    @ApiResponse(responseCode = "400", description = "Datos inválidos: dice qué campo falló y por qué",
+            content = @Content(mediaType = "application/json", schema = @Schema(type = "object"),
+                    examples = @ExampleObject(value = "{\"fecha\": \"la fecha no puede ser futura\"}")))
     public ResponseEntity<Avistamiento> crear(@Valid @RequestBody Avistamiento avistamiento) {
         avistamiento.setId(null);
         Avistamiento guardado = repository.save(avistamiento);
@@ -73,7 +77,9 @@ public class AvistamientoController {
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar un avistamiento completo")
     @ApiResponse(responseCode = "200", description = "Avistamiento actualizado")
-    @ApiResponse(responseCode = "400", description = "Datos inválidos")
+    @ApiResponse(responseCode = "400", description = "Datos inválidos: dice qué campo falló y por qué",
+            content = @Content(mediaType = "application/json", schema = @Schema(type = "object"),
+                    examples = @ExampleObject(value = "{\"fecha\": \"la fecha no puede ser futura\"}")))
     @ApiResponse(responseCode = "404", description = "No existe un avistamiento con ese id", content = @Content)
     public ResponseEntity<Avistamiento> actualizar(@PathVariable Long id,
                                                    @Valid @RequestBody Avistamiento datos) {

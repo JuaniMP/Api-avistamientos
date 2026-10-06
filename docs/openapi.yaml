@@ -24,14 +24,6 @@ paths:
           type: integer
           format: int64
       responses:
-        "400":
-          description: Bad Request
-          content:
-            '*/*':
-              schema:
-                type: object
-                additionalProperties:
-                  type: string
         "200":
           description: Avistamiento encontrado
           content:
@@ -59,20 +51,20 @@ paths:
               $ref: "#/components/schemas/Avistamiento"
         required: true
       responses:
-        "400":
-          description: Datos inválidos
-          content:
-            '*/*':
-              schema:
-                type: object
-                additionalProperties:
-                  type: string
         "200":
           description: Avistamiento actualizado
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/Avistamiento"
+        "400":
+          description: "Datos inválidos: dice qué campo falló y por qué"
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                fecha: la fecha no puede ser futura
         "404":
           description: No existe un avistamiento con ese id
     delete:
@@ -88,14 +80,6 @@ paths:
           type: integer
           format: int64
       responses:
-        "400":
-          description: Bad Request
-          content:
-            '*/*':
-              schema:
-                type: object
-                additionalProperties:
-                  type: string
         "204":
           description: Avistamiento eliminado
         "404":
@@ -107,14 +91,6 @@ paths:
       summary: Listar todos los avistamientos
       operationId: listar
       responses:
-        "400":
-          description: Bad Request
-          content:
-            '*/*':
-              schema:
-                type: object
-                additionalProperties:
-                  type: string
         "200":
           description: OK
           content:
@@ -135,20 +111,20 @@ paths:
               $ref: "#/components/schemas/Avistamiento"
         required: true
       responses:
-        "400":
-          description: Datos inválidos
-          content:
-            '*/*':
-              schema:
-                type: object
-                additionalProperties:
-                  type: string
         "201":
           description: Avistamiento creado
           content:
             '*/*':
               schema:
                 $ref: "#/components/schemas/Avistamiento"
+        "400":
+          description: "Datos inválidos: dice qué campo falló y por qué"
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                fecha: la fecha no puede ser futura
   /avistamientos/resumen:
     get:
       tags:
@@ -156,14 +132,6 @@ paths:
       summary: Contar avistamientos por especie
       operationId: resumen
       responses:
-        "400":
-          description: Bad Request
-          content:
-            '*/*':
-              schema:
-                type: object
-                additionalProperties:
-                  type: string
         "200":
           description: OK
           content:

@@ -1,0 +1,213 @@
+openapi: 3.1.0
+info:
+  title: API de avistamientos de aves
+  description: Registro de avistamientos de aves.
+  version: "1.0"
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+tags:
+- name: Avistamientos
+  description: Registro de avistamientos de aves
+paths:
+  /avistamientos/{id}:
+    get:
+      tags:
+      - Avistamientos
+      summary: Ver un avistamiento por id
+      operationId: obtener
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+        "200":
+          description: Avistamiento encontrado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Avistamiento"
+        "404":
+          description: No existe un avistamiento con ese id
+    put:
+      tags:
+      - Avistamientos
+      summary: Actualizar un avistamiento completo
+      operationId: actualizar
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Avistamiento"
+        required: true
+      responses:
+        "400":
+          description: Datos inválidos
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+        "200":
+          description: Avistamiento actualizado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Avistamiento"
+        "404":
+          description: No existe un avistamiento con ese id
+    delete:
+      tags:
+      - Avistamientos
+      summary: Eliminar un avistamiento
+      operationId: eliminar
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+        "204":
+          description: Avistamiento eliminado
+        "404":
+          description: No existe un avistamiento con ese id
+  /avistamientos:
+    get:
+      tags:
+      - Avistamientos
+      summary: Listar todos los avistamientos
+      operationId: listar
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Avistamiento"
+    post:
+      tags:
+      - Avistamientos
+      summary: Registrar un avistamiento
+      operationId: crear
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Avistamiento"
+        required: true
+      responses:
+        "400":
+          description: Datos inválidos
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+        "201":
+          description: Avistamiento creado
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Avistamiento"
+  /avistamientos/resumen:
+    get:
+      tags:
+      - Avistamientos
+      summary: Contar avistamientos por especie
+      operationId: resumen
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                  format: int64
+components:
+  schemas:
+    Avistamiento:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Lo asigna el sistema
+          example: 1
+          readOnly: true
+        especie:
+          type: string
+          example: colibrí
+          maxLength: 100
+          minLength: 0
+          pattern: "\\p{L}[\\p{L} '-]*"
+        lugar:
+          type: string
+          example: Humedal La Conejera
+          maxLength: 150
+          minLength: 0
+        fecha:
+          type: string
+          format: date
+          description: "Formato AAAA-MM-DD, no puede ser futura"
+          example: 2026-09-29
+        observador:
+          type: string
+          example: Juanita
+          maxLength: 100
+          minLength: 0
+          pattern: "\\p{L}[\\p{L} '.-]*"
+      required:
+      - especie
+      - fecha
+      - lugar
+      - observador

@@ -40,6 +40,8 @@ src/main/java/co/edu/bosque/avistamientos/
 src/main/resources/application.properties   Configuración de la base H2 (guardada en archivo)
 src/test/java/...                           Pruebas de integración de todos los endpoints
 src/test/resources/application.properties   Base H2 en memoria, solo para las pruebas
+docs/openapi.yaml                           Contrato OpenAPI de la API (copia del que genera Swagger)
+docs/avistamientos.postman_collection.json  Colección de Postman con todas las peticiones
 ```
 
 ## Modelo
@@ -64,6 +66,20 @@ Cada avistamiento tiene:
 | POST | /avistamientos | 201 con el creado, o 400 si los datos no son válidos |
 | PUT | /avistamientos/{id} | 200 con el actualizado, 404 si no existe, o 400 si los datos no son válidos |
 | DELETE | /avistamientos/{id} | 204, o 404 si no existe |
+
+## Documentación con Swagger (OpenAPI)
+
+La API tiene su contrato OpenAPI, generado automáticamente a partir del código con [springdoc-openapi](https://springdoc.org/). Con la API corriendo:
+
+| Qué | Dirección |
+|---|---|
+| **Swagger UI**: página para ver y probar todos los endpoints desde el navegador | `http://localhost:8080/swagger-ui.html` |
+| Contrato OpenAPI en JSON | `http://localhost:8080/v3/api-docs` |
+| Contrato OpenAPI en YAML | `http://localhost:8080/v3/api-docs.yaml` |
+
+En Swagger UI cada endpoint muestra qué recibe, qué responde y con qué códigos (200, 201, 204, 400, 404). Para probar uno: abrirlo → **Try it out** → **Execute**. Los campos ya vienen con datos de ejemplo válidos.
+
+Además hay una copia del contrato en `docs/openapi.yaml`, para poder leerlo sin levantar la API (por ejemplo, pegándolo en [editor.swagger.io](https://editor.swagger.io/)).
 
 ## Ejemplos con curl
 
@@ -168,6 +184,7 @@ Con la base vacía (sin carpeta `data/`), se pueden correr en orden de la 1 a la
 - **La fecha es `LocalDate` y no texto**: así Java comprueba que sea una fecha real (rechaza `2026-13-45`) y se puede validar que no sea futura. En el JSON se sigue viendo como `"2026-09-29"`.
 - **Las validaciones van en la entidad, no en el controller**: las reglas quedan en un solo lugar y sirven igual para POST y PUT. El `@Valid` del controller es el que las activa.
 - **Manejo de errores en una clase aparte** (`ManejadorErrores`, con `@RestControllerAdvice`): los errores también se responden en JSON y dicen qué corregir, sin llenar el controller de `try/catch`.
+- **El contrato OpenAPI se genera desde el código (code-first)**: como la API ya estaba hecha, springdoc lee el controller, la entidad y sus validaciones y arma el contrato solo. Las anotaciones `@Operation`, `@ApiResponse` y `@Schema` solo lo documentan (resúmenes, códigos posibles y ejemplos); no cambian cómo funciona la API.
 - **El resumen usa un `TreeMap`**: cuenta los avistamientos por especie y los devuelve ordenados alfabéticamente.
 
 ## Pruebas

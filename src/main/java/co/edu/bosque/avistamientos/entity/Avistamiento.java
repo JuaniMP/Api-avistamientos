@@ -1,5 +1,6 @@
 package co.edu.bosque.avistamientos.entity;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -17,26 +18,31 @@ public class Avistamiento {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Schema(description = "Lo asigna el sistema", accessMode = Schema.AccessMode.READ_ONLY, example = "1")
     private Long id;
 
     @NotBlank(message = "la especie es obligatoria")
     @Size(max = 100, message = "la especie no puede tener más de 100 caracteres")
     @Pattern(regexp = "\\p{L}[\\p{L} '-]*",
             message = "la especie solo puede tener letras, espacios, guiones o apóstrofes, y debe empezar con letra")
+    @Schema(example = "colibrí")
     private String especie;
 
     @NotBlank(message = "el lugar es obligatorio")
     @Size(max = 150, message = "el lugar no puede tener más de 150 caracteres")
+    @Schema(example = "Humedal La Conejera")
     private String lugar;
 
     @NotNull(message = "la fecha es obligatoria")
     @PastOrPresent(message = "la fecha no puede ser futura")
+    @Schema(description = "Formato AAAA-MM-DD, no puede ser futura", example = "2026-09-29")
     private LocalDate fecha;
 
     @NotBlank(message = "el observador es obligatorio")
     @Size(max = 100, message = "el observador no puede tener más de 100 caracteres")
     @Pattern(regexp = "\\p{L}[\\p{L} '.-]*",
             message = "el observador solo puede tener letras, espacios, puntos, guiones o apóstrofes")
+    @Schema(example = "Juanita")
     private String observador;
 
     public Long getId() { return id; }

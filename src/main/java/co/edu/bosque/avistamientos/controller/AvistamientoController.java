@@ -2,6 +2,10 @@ package co.edu.bosque.avistamientos.controller;
 
 import co.edu.bosque.avistamientos.entity.Avistamiento;
 import co.edu.bosque.avistamientos.repository.AvistamientoRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +18,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/avistamientos")
+@Tag(name = "Avistamientos", description = "Registro de avistamientos de aves")
 public class AvistamientoController {
 
     private final AvistamientoRepository repository;
@@ -24,12 +29,16 @@ public class AvistamientoController {
 
 
     @GetMapping
+    @Operation(summary = "Listar todos los avistamientos")
     public List<Avistamiento> listar() {
         return repository.findAll();
     }
 
 
     @GetMapping("/{id}")
+    @Operation(summary = "Ver un avistamiento por id")
+    @ApiResponse(responseCode = "200", description = "Avistamiento encontrado")
+    @ApiResponse(responseCode = "404", description = "No existe un avistamiento con ese id", content = @Content)
     public ResponseEntity<Avistamiento> obtener(@PathVariable Long id) {
         Optional<Avistamiento> encontrado = repository.findById(id);
         if (encontrado.isEmpty()) {
@@ -39,6 +48,7 @@ public class AvistamientoController {
     }
 
     @GetMapping("/resumen")
+    @Operation(summary = "Contar avistamientos por especie")
     public Map<String, Long> resumen() {
         Map<String, Long> conteo = new TreeMap<>();
         for (Avistamiento a : repository.findAll()) {
@@ -50,6 +60,9 @@ public class AvistamientoController {
 
 
     @PostMapping
+    @Operation(summary = "Registrar un avistamiento")
+    @ApiResponse(responseCode = "201", description = "Avistamiento creado")
+    @ApiResponse(responseCode = "400", description = "Datos inválidos")
     public ResponseEntity<Avistamiento> crear(@Valid @RequestBody Avistamiento avistamiento) {
         avistamiento.setId(null);
         Avistamiento guardado = repository.save(avistamiento);
@@ -58,6 +71,10 @@ public class AvistamientoController {
 
 
     @PutMapping("/{id}")
+    @Operation(summary = "Actualizar un avistamiento completo")
+    @ApiResponse(responseCode = "200", description = "Avistamiento actualizado")
+    @ApiResponse(responseCode = "400", description = "Datos inválidos")
+    @ApiResponse(responseCode = "404", description = "No existe un avistamiento con ese id", content = @Content)
     public ResponseEntity<Avistamiento> actualizar(@PathVariable Long id,
                                                    @Valid @RequestBody Avistamiento datos) {
         if (!repository.existsById(id)) {
@@ -70,6 +87,9 @@ public class AvistamientoController {
 
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Eliminar un avistamiento")
+    @ApiResponse(responseCode = "204", description = "Avistamiento eliminado")
+    @ApiResponse(responseCode = "404", description = "No existe un avistamiento con ese id", content = @Content)
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         if (!repository.existsById(id)) {
             return ResponseEntity.notFound().build();

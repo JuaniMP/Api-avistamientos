@@ -43,7 +43,7 @@ Usé partición de equivalencia (dividir la entrada en clases que el sistema tra
 | `2026-02-30` | Inválido | Error "no existe" | Un parser permisivo no lo rechaza, lo cambia por otra fecha sin avisar. El `2026-13-45` quedó en integración |
 | `null` | Inválido | Error "obligatoria" | El campo no viene en el JSON |
 
-**Lugar y observador.** La regla solo pide que no estén vacíos, pero el taller deja usar validaciones propias y yo ya tenía largos máximos (150 y 100) y un formato para el observador:
+**Lugar y observador.** La regla solo pide que no estén vacíos, pero el taller deja usar validaciones propias, así que también les apliqué partición y valores límite a mis largos máximos (150 y 100) y al formato del observador:
 
 | Campo | Valor | Tipo de caso | Resultado esperado |
 |---|---|---|---|
@@ -58,15 +58,15 @@ Además, una prueba con los cuatro campos mal revisa que salgan todos los errore
 
 ## 3. Por qué cada nivel
 
-**Los límites del validador son unitarios** porque la regla es lógica pura: entra un `AvistamientoRequest` y sale un mapa. Por HTTP serían más lentos y, si fallaran, no sabría si el problema es la regla, el JSON o el controller. Así cumplen FIRST: rápidas, independientes y repetibles.
+**Los valores límite del validador van en el nivel unitario** porque la regla es lógica pura: entra un `AvistamientoRequest` y sale un mapa. Por HTTP serían más lentos y, si fallaran, no sabría si el problema es la regla, el JSON o el controller. Así cumplen FIRST: rápidas, independientes y repetibles.
 
-**El servicio también es unitario, con un doble del repositorio.** Reviso decisiones del servicio (si los datos están mal no guarda, si el id no existe no borra, el PUT guarda con el mismo id) y nada de eso necesita una base real.
+**El servicio también va en el nivel unitario, con un doble del repositorio.** Reviso decisiones del servicio (si los datos están mal no guarda, si el id no existe no borra, el PUT guarda con el mismo id) y nada de eso necesita una base real.
 
-**El POST tiene integración aunque el validador ya esté probado**, porque la unitaria no ve las fronteras entre componentes: que el JSON se mapee bien, que el controller sí llame al validador, que `ManejadorErrores` convierta el error en un 400 y que el dato quede guardado de verdad (después del POST hago un GET al id nuevo). Lo comprobé borrando ese manejador: las 30 unitarias siguieron pasando y fallaron 5 de integración.
+**El POST también se prueba en el nivel de integración**, porque la unitaria no ve las fronteras entre componentes: que el JSON se mapee bien, que el controller sí llame al validador, que `ManejadorErrores` convierta el error en un 400 y que el dato quede guardado de verdad (después del POST hago un GET al id nuevo). Lo comprobé borrando ese manejador: las 30 unitarias siguieron pasando y fallaron 5 de integración.
 
 Por eso las de integración revisan el cuerpo y el efecto: después del PUT, que esté el dato nuevo; después de un PUT inválido, que siga el viejo; después del DELETE, que el GET dé 404. Hay éxito y error en cada endpoint donde aplica, y el `@BeforeEach` vacía la H2 en memoria para que no dependan del orden.
 
-Como las pruebas muestran que hay defectos pero no que no los hay (el primer principio), para revisar que no pasaran "por pasar" metí a propósito ocho defectos en el validador (por ejemplo mínimo 2 en vez de 3, `!isBefore` en vez de `isAfter`, quitar el `trim()`) y cada uno lo detectó la prueba de su límite o de su clase.
+Como las pruebas muestran que hay defectos pero no que no los hay (el primer principio), para revisar que no pasaran "por pasar" metí a propósito ocho defectos en el validador (por ejemplo mínimo 2 en vez de 3, `!isBefore` en vez de `isAfter`, quitar el `trim()`) y cada uno lo detectó la prueba de su valor límite o de su clase de la partición.
 
 ## 4. Los dobles
 
@@ -75,7 +75,7 @@ Como las pruebas muestran que hay defectos pero no que no los hay (el primer pri
 | `RelojFijo` | Stub | Solo devuelve una fecha preparada (21/10/2026). No reviso cómo lo llaman, por eso no es mock |
 | `AvistamientoRepository` con Mockito | Stub y mock | Con `when(...).thenReturn(...)` decido qué responde (stub). Con `verify(repository, never()).save(...)` reviso que no se guardó (mock) |
 
-**Sin el `RelojFijo`**, la prueba de "mañana" usaría `LocalDate.now()` o una fecha escrita a mano. La escrita a mano falla al otro día, porque el 22 se vuelve "hoy", y con `now()` el resultado depende de la hora (cerca de medianoche puede caer en otro día). La prueba dejaría de ser repetible. En integración también lo puse, con `@TestConfiguration` y `@Primary`, para probar hoy y mañana por HTTP con fecha fija.
+**Sin el `RelojFijo`**, la prueba de "mañana" usaría `LocalDate.now()` o una fecha escrita a mano. La escrita a mano falla al otro día, porque el 22 se vuelve "hoy", y con `now()` el resultado depende de la hora (cerca de medianoche puede caer en otro día). La prueba dejaría de ser repetible. En integración también lo puse (`@TestConfiguration` y `@Primary`) para probar la frontera hoy/mañana por HTTP con fecha fija.
 
 **Mock y no fake:** un repositorio en memoria también servía, pero lo que reviso es lo que el servicio hace o no hace con el repositorio, y eso con el mock se escribe directo. Sin doble, la prueba ya sería de integración. No usé dummy porque ningún método recibe parámetros que no se usen, ni spy porque el `verify` ya me da eso. En integración no reemplacé la base porque ahí lo que quiero probar es justo la colaboración con JPA.
 
@@ -89,7 +89,7 @@ Como las pruebas muestran que hay defectos pero no que no los hay (el primer pri
 
 ## 6. Lectura de la cobertura
 
-`mvnw.cmd verify` con JaCoCo: 47 pruebas, 0 fallas. El criterio de cobertura más exigente es el de ramas (que cada `if` se pruebe por el lado verdadero y por el falso), así que miré ramas además de líneas:
+`mvnw.cmd verify` con JaCoCo: 47 pruebas, 0 fallas. Usé dos criterios de cobertura: líneas y ramas. El criterio de ramas es más exigente (que cada `if` se pruebe por el lado verdadero y por el falso):
 
 | Clase | Líneas | Ramas |
 |---|---|---|

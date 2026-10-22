@@ -1,153 +1,109 @@
 # Justificación de las pruebas: API de avistamientos
 
-Taller de pruebas unitarias y de integración. Ingeniería de Software 2, Sesión 22 (21 de octubre de 2026).
-Juanita Mejía Pineda.
+Ingeniería de Software 2, Sesión 22 (21 de octubre de 2026). Juanita Mejía Pineda.
 
-En total quedaron 47 pruebas: 30 unitarias (23 del validador y 7 del servicio) y 17 de integración (16 de los endpoints y la que revisa que la app arranque). Los comandos para correrlas y para sacar la cobertura están en el README.
+Quedaron 47 pruebas: 30 unitarias (23 del validador y 7 del servicio) y 17 de integración. Los comandos para correrlas y sacar la cobertura están en el README.
 
 ## 1. Qué cambió en el código
 
-En la versión del 29 de septiembre las validaciones eran anotaciones en la entidad (`@NotBlank`, `@Size`, `@PastOrPresent`) y el `@Valid` del controller era el que las activaba. Funcionaba, pero la regla no se podía probar sola, solo existía con Spring corriendo. Además `@PastOrPresent` usa el reloj del sistema por dentro, entonces no había forma de decirle a una prueba qué día es "hoy". Por eso cambié cuatro cosas:
+Antes las validaciones eran anotaciones en la entidad y las activaba el `@Valid` del controller, entonces la regla solo existía con Spring corriendo, y `@PastOrPresent` usaba el reloj del sistema por dentro. Cambié cuatro cosas:
 
-- **Saqué la regla a su propia clase, `ValidadorDeAvistamiento`.** Recibe los datos y devuelve un mapa con el campo que falló y el mensaje. No sabe nada de HTTP ni de la base, así que la puedo crear con `new` y probarla en milisegundos. Le quité las anotaciones a la entidad para que la regla quedara en un solo lugar. Si las dejaba, el `@Valid` respondía 400 antes de que el validador se ejecutara y las pruebas de integración nunca iban a pasar por él.
-- **El "hoy" ahora lo da una interfaz `Reloj`.** En producción se inyecta `RelojDelSistema` (que hace `LocalDate.now()`) y en las pruebas un `RelojFijo`. Es la táctica de limitar el no determinismo que vimos en testabilidad, y funciona por inversión de dependencias: el validador depende de la interfaz y no de la clase concreta.
-- **Agregué una capa de servicio, `AvistamientoService`.** Antes el controller hablaba directo con el repositorio. Ahora el controller solo se encarga de lo de HTTP y el servicio valida, convierte y guarda. Como el servicio recibe el repositorio por el constructor, en una prueba unitaria le puedo pasar un doble.
-- **La fecha ahora llega como texto (`AvistamientoRequest`).** Si llega como `LocalDate`, Jackson rechaza algo como `"2026-13-45"` antes de que se valide y el error no dice qué campo falló, que es justo lo que pide la regla. Ahora el validador revisa el formato y responde `{"fecha": "la fecha no existe en el calendario"}`.
+- **`ValidadorDeAvistamiento`:** la regla en su propia clase. Recibe los datos y devuelve un mapa campo → mensaje, sin saber nada de HTTP ni de la base. Le quité las anotaciones a la entidad para que la regla esté en un solo lugar.
+- **Interfaz `Reloj`:** en producción se inyecta `RelojDelSistema` (`LocalDate.now()`) y en las pruebas un `RelojFijo`. Es la táctica de limitar el no determinismo, y funciona por inversión de dependencias.
+- **`AvistamientoService`:** el controller solo se encarga de HTTP y el servicio valida y guarda. Recibe el repositorio por el constructor, así que en las pruebas le puedo pasar un doble.
+- **La fecha llega como texto (`AvistamientoRequest`):** si llegara como `LocalDate`, Jackson rechazaría `"2026-13-45"` antes de validar y el error no diría qué campo falló.
 
-Con estos cambios la API ganó controlabilidad, porque puedo fijar la entrada, el día y lo que responde el repositorio. También ganó observabilidad, porque el validador dice exactamente qué campo falló en vez de lanzar una excepción de Spring que toca interpretar.
+Así la API ganó controlabilidad (fijo la entrada, el día y lo que responde el repositorio) y observabilidad (el validador dice qué campo falló).
 
 ## 2. Tabla de casos (Parte A)
 
-Para escoger los casos usé partición de equivalencia, o sea, dividir la entrada en clases que el sistema trata igual y probar un valor de cada una. También usé valores límite: probar justo en el borde de cada clase y a los dos lados, porque ahí es donde se cuela un `<` en vez de un `<=`. En las pruebas "hoy" es el 21 de octubre de 2026, que es lo que dice el `RelojFijo`.
+Usé partición de equivalencia (dividir la entrada en clases que el sistema trata igual y probar un valor de cada una) y valores límite (probar justo en cada borde, a los dos lados, porque ahí se cuela un `<` en vez de `<=`). En las pruebas "hoy" es el 21/10/2026, lo que dice el `RelojFijo`.
 
-**Especie** (regla: entre 3 y 50 caracteres). Las clases son: vacía, muy corta (1 a 2), válida (3 a 50), muy larga (51 o más) y con caracteres que no se permiten.
-
-| Valor | Tipo de caso | Resultado esperado | Por qué ese valor |
-|---|---|---|---|
-| `""` | Inválido (vacía) | Error: "la especie es obligatoria" | Es la clase de "no hay dato", que tiene su propio mensaje |
-| `"ab"` (2) | Límite inválido | Error: "entre 3 y 50 caracteres" | Es el último valor de la clase muy corta. Si alguien pone `< 2` en vez de `< 3`, solo este caso lo detecta |
-| `"abc"` (3) | Límite válido | Sin errores | El primer valor válido, o sea el otro lado del mismo borde |
-| `"colibri"` (7) | Representativo válido | Sin errores | Un valor del medio de la clase válida (está en la prueba de "todo válido") |
-| 50 letras | Límite válido | Sin errores | El último valor válido |
-| 51 letras | Límite inválido | Error: "entre 3 y 50 caracteres" | El primer valor de la clase muy larga |
-| `"   ab   "` | Límite inválido | Error: "entre 3 y 50 caracteres" | Tiene 8 caracteres pero solo 2 letras. Sirve para ver que los espacios de los lados no cuentan; sin el `trim()` pasaría como válida |
-| `"------"` | Inválido (formato) | Error: "solo puede tener letras…" | El largo es válido (6) pero no son letras. Es otra clase aunque el largo esté bien |
-
-**Fecha** (regla: formato AAAA-MM-DD y que no sea posterior a hoy). Las clases son: sin fecha, formato incorrecto, formato bien pero la fecha no existe, pasada o de hoy (válida) y futura.
+**Especie** (3 a 50 caracteres). Clases: vacía, muy corta, válida, muy larga y con caracteres no permitidos.
 
 | Valor | Tipo de caso | Resultado esperado | Por qué ese valor |
 |---|---|---|---|
-| `"2026-09-29"` | Representativo válido | Sin errores | Una fecha cualquiera del pasado |
-| `"2026-10-21"` (hoy) | Límite válido | Sin errores | La regla dice "no posterior a hoy", entonces hoy sí vale. Si alguien usa `!isBefore` en vez de `isAfter`, solo este caso falla |
-| `"2026-10-22"` (mañana) | Límite inválido | Error: "no puede ser posterior a hoy" | El primer día de la clase futura |
-| `"21/10/2026"` | Inválido (formato) | Error: "debe tener el formato AAAA-MM-DD" | Es una fecha real pero escrita como la escribimos en Colombia, que es el error más probable de alguien usando la API |
-| `"2026-02-30"` | Inválido (no existe) | Error: "no existe en el calendario" | El formato está bien pero el día no existe (2026 no es bisiesto). Lo escogí en vez de `2026-13-45` porque un parser permisivo no lo rechaza, sino que lo cambia sin avisar por otra fecha (el 28 de febrero o el 2 de marzo, depende del modo). Un mes 13 lo rechaza cualquiera. El `2026-13-45` quedó en la prueba de integración |
-| `null` | Inválido (vacía) | Error: "la fecha es obligatoria" | Para cuando el campo no viene en el JSON |
+| `""` | Inválido | Error "obligatoria" | La clase de "no hay dato" |
+| `"ab"` (2) | Límite inválido | Error "entre 3 y 50" | Si alguien pone `< 2` en vez de `< 3`, solo este caso lo detecta |
+| `"abc"` (3) | Límite válido | OK | El otro lado del mismo borde |
+| `"colibri"` | Representativo | OK | Un valor del medio de la clase válida |
+| 50 letras | Límite válido | OK | El último válido |
+| 51 letras | Límite inválido | Error "entre 3 y 50" | El primero de la clase muy larga |
+| `"   ab   "` | Límite inválido | Error "entre 3 y 50" | Solo 2 letras: los espacios de los lados no cuentan |
+| `"------"` | Inválido | Error "solo letras…" | Largo válido pero no son letras: es otra clase |
 
-**Lugar y observador.** La regla del taller solo pide que no estén vacíos, pero el taller también dice que si uno ya tenía validaciones propias las puede usar. Yo ya tenía de septiembre un largo máximo para los dos (150 y 100) y un formato para el observador, entonces también los partí en clases y probé sus límites:
+**Fecha** (AAAA-MM-DD y no posterior a hoy). Clases: sin fecha, formato malo, formato bien pero inexistente, válida (pasada o hoy) y futura.
 
-| Campo | Valor | Tipo de caso | Resultado esperado | Por qué ese valor |
-|---|---|---|---|---|
-| Lugar | `"   "` | Inválido (vacío) | Error: "el lugar es obligatorio" | Solo espacios. `isEmpty()` diría que no está vacío pero `isBlank()` sí lo detecta, por eso es el caso vacío más engañoso |
-| Lugar | `"Humedal La Conejera"` | Representativo válido | Sin errores | Un lugar normal (está en la prueba de "todo válido") |
-| Lugar | 150 letras | Límite válido | Sin errores | El último valor válido |
-| Lugar | 151 letras | Límite inválido | Error: "no puede tener más de 150 caracteres" | El primer valor de la clase muy larga |
-| Observador | `""` | Inválido (vacío) | Error: "el observador es obligatorio" | La clase de "no hay dato" |
-| Observador | `"Juanita"` | Representativo válido | Sin errores | Un nombre normal (está en la prueba de "todo válido") |
-| Observador | `"María-José O'Neil Jr."` | Representativo válido | Sin errores | Usa todos los caracteres especiales que se permiten (tilde, guion, apóstrofe y punto). Si alguien "simplifica" la expresión regular, este caso lo detecta |
-| Observador | 100 letras | Límite válido | Sin errores | El último valor válido |
-| Observador | 101 letras | Límite inválido | Error: "no puede tener más de 100 caracteres" | El primer valor de la clase muy larga |
-| Observador | `"Juanita123"` | Inválido (formato) | Error: "solo puede tener letras…" | El largo es válido pero tiene números. Es otra clase, igual que `"------"` en la especie |
+| Valor | Tipo de caso | Resultado esperado | Por qué ese valor |
+|---|---|---|---|
+| `2026-09-29` | Representativo | OK | Una fecha del pasado |
+| `2026-10-21` (hoy) | Límite válido | OK | "No posterior a hoy" incluye hoy. Si alguien usa `!isBefore` en vez de `isAfter`, solo este caso falla |
+| `2026-10-22` (mañana) | Límite inválido | Error "posterior a hoy" | El primer día de la clase futura |
+| `21/10/2026` | Inválido | Error "formato AAAA-MM-DD" | Como escribimos la fecha en Colombia, el error más probable |
+| `2026-02-30` | Inválido | Error "no existe" | Un parser permisivo no lo rechaza, lo cambia por otra fecha sin avisar. El `2026-13-45` quedó en integración |
+| `null` | Inválido | Error "obligatoria" | El campo no viene en el JSON |
 
-Además hay una prueba con los cuatro campos mal al tiempo, para revisar que el validador devuelva todos los errores y no se quede solo con el primero.
+**Lugar y observador.** La regla solo pide que no estén vacíos, pero el taller deja usar validaciones propias y yo ya tenía largos máximos (150 y 100) y un formato para el observador:
 
-En total son 23 pruebas unitarias del validador. Ahí están los seis límites que pide el taller (especie de 2, 3, 50 y 51; fecha de hoy y de mañana) y los de mis validaciones propias.
+| Campo | Valor | Tipo de caso | Resultado esperado |
+|---|---|---|---|
+| Lugar | `"   "` | Inválido | Error "obligatorio" (`isBlank()` lo detecta, `isEmpty()` no) |
+| Lugar | 150 / 151 letras | Límite válido / inválido | OK / Error "más de 150" |
+| Observador | `""` | Inválido | Error "obligatorio" |
+| Observador | 100 / 101 letras | Límite válido / inválido | OK / Error "más de 100" |
+| Observador | `"María-José O'Neil Jr."` | Representativo | OK (usa todos los caracteres especiales permitidos) |
+| Observador | `"Juanita123"` | Inválido | Error "solo letras…" |
+
+Además, una prueba con los cuatro campos mal revisa que salgan todos los errores y no solo el primero.
 
 ## 3. Por qué cada nivel
 
-**Los límites del validador son pruebas unitarias.** La regla es lógica pura: entra un `AvistamientoRequest` y sale un mapa. No hay base de datos ni HTTP de por medio, entonces probarla a través de la API sería más lento y, si fallaba, no sabría si el problema es la regla, el JSON o el controller. Como unitarias son rápidas, independientes y cada una revisa una sola cosa, que es lo que pide FIRST.
+**Los límites del validador son unitarios** porque la regla es lógica pura: entra un `AvistamientoRequest` y sale un mapa. Por HTTP serían más lentos y, si fallaran, no sabría si el problema es la regla, el JSON o el controller. Así cumplen FIRST: rápidas, independientes y repetibles.
 
-**El servicio también tiene pruebas unitarias, con un doble del repositorio.** Ahí lo que quiero revisar son decisiones del servicio: que si los datos están mal no guarde nada, que si el id no existe no borre nada, que el PUT guarde con el mismo id y que antes de guardar limpie los espacios y convierta la fecha a `LocalDate`. Para nada de eso se necesita una base real.
+**El servicio también es unitario, con un doble del repositorio.** Reviso decisiones del servicio (si los datos están mal no guarda, si el id no existe no borra, el PUT guarda con el mismo id) y nada de eso necesita una base real.
 
-**El POST tiene pruebas de integración aunque el validador ya esté probado.** La unitaria del validador no puede ver lo que pasa en las fronteras entre componentes:
+**El POST tiene integración aunque el validador ya esté probado**, porque la unitaria no ve las fronteras entre componentes: que el JSON se mapee bien, que el controller sí llame al validador, que `ManejadorErrores` convierta el error en un 400 y que el dato quede guardado de verdad (después del POST hago un GET al id nuevo). Lo comprobé borrando ese manejador: las 30 unitarias siguieron pasando y fallaron 5 de integración.
 
-- que el JSON se mapee bien al `AvistamientoRequest` (si un campo se llamara diferente, llegaría `null`);
-- que el controller sí llame al servicio y el servicio al validador;
-- que `ManejadorErrores` convierta la `DatosInvalidosException` en un 400 con el JSON de campo y mensaje. Esto lo comprobé: borré ese método y las 30 unitarias siguieron pasando, pero fallaron 5 de integración, porque la excepción se escapaba y la API habría respondido 500;
-- que un JSON mal escrito también dé 400;
-- que el avistamiento sí quede guardado: después del POST hago un GET al id nuevo y lo tiene que devolver.
+Por eso las de integración revisan el cuerpo y el efecto: después del PUT, que esté el dato nuevo; después de un PUT inválido, que siga el viejo; después del DELETE, que el GET dé 404. Hay éxito y error en cada endpoint donde aplica, y el `@BeforeEach` vacía la H2 en memoria para que no dependan del orden.
 
-Por eso las de integración revisan el cuerpo y el efecto, no solo el código de estado. Después del PUT reviso que en la base esté el dato nuevo, después de un PUT inválido que siga el viejo, y después del DELETE que el GET responda 404. Hay por lo menos un caso de éxito y uno de error por endpoint. Cada prueba arma sus propios datos y el `@BeforeEach` vacía la base H2 en memoria, entonces no dependen del orden en que corran.
-
-Hay casos que están en los dos niveles, como la fecha de hoy, la de mañana y la especie de 2. No es repetir lo mismo: la unitaria prueba la regla y la de integración prueba que la regla sí está conectada y que se usa el reloj que se inyecta en el contexto de Spring.
-
-**¿Las pruebas sí detectan defectos?** Que una prueba pase no demuestra que el código esté bien (es el primer principio). Para revisar que mis pruebas no pasaran "por pasar", metí a propósito ocho defectos típicos en el validador, uno a la vez, y corrí todo:
-
-| Defecto que metí | Pruebas que fallaron |
-|---|---|
-| Mínimo de la especie en 2 en vez de 3 | 7, entre ellas `especieDe2Caracteres` (unitaria y de integración) |
-| Máximo de la especie en 51 en vez de 50 | 4, entre ellas `especieDe51Caracteres` |
-| `!isBefore(hoy)` en vez de `isAfter(hoy)` (también rechaza hoy) | 2: `fechaDeHoy` unitaria y de integración |
-| Quitar el `trim()` de la especie | 2: `especieDe2LetrasRodeadaDeEspacios` y la del servicio que revisa los datos limpios |
-| Máximo del lugar en 151 en vez de 150 | 1: `lugarDe151Caracteres` |
-| Máximo del observador en 99 en vez de 100 | 2: `observadorDe100Caracteres` y `observadorDe101Caracteres` |
-| Expresión regular del observador que acepta cualquier cosa | 1: `observadorConNumeros` |
-| Expresión regular del observador sin punto, guion ni apóstrofe | 1: `observadorConPuntoGuionYApostrofe` |
-
-Cada defecto lo agarró justo la prueba de su límite o de su clase. Es lo mismo del ejemplo del envío gratis que vimos en clase: solo el valor que está en el borde detecta el `>` en vez de `>=`.
+Para revisar que no pasaran "por pasar", metí a propósito ocho defectos en el validador (por ejemplo mínimo 2 en vez de 3, `!isBefore` en vez de `isAfter`, quitar el `trim()`) y cada uno lo detectó la prueba de su límite o de su clase.
 
 ## 4. Los dobles
 
-| Doble | Tipo | Dónde | Por qué ese tipo |
-|---|---|---|---|
-| `RelojFijo` | Stub | Pruebas del validador, del servicio y de integración | Solo necesito que devuelva una fecha preparada (21/10/2026). No reviso cómo lo llaman, por eso es un stub y no un mock |
-| `AvistamientoRepository` con Mockito | Stub y mock | `AvistamientoServiceTest` | Con `when(...).thenReturn(...)` lo uso como stub, para decidir qué responde `existsById` o `findAll`. Con `verify(repository, never()).save(...)` lo uso como mock, porque ahí lo que importa es una interacción: que no se llamó a guardar |
+| Doble | Tipo | Por qué ese tipo |
+|---|---|---|
+| `RelojFijo` | Stub | Solo devuelve una fecha preparada (21/10/2026). No reviso cómo lo llaman, por eso no es mock |
+| `AvistamientoRepository` con Mockito | Stub y mock | Con `when(...).thenReturn(...)` decido qué responde (stub). Con `verify(repository, never()).save(...)` reviso que no se guardó (mock) |
 
-**¿Qué pasaba sin el `RelojFijo`?** La prueba de "fecha de mañana" tendría que usar `LocalDate.now().plusDays(1)` o una fecha escrita a mano como `2026-10-22`. La escrita a mano pasa hoy y falla mañana, porque el 22 se vuelve "hoy" y ya es válida. Con `now()` el resultado depende de la hora: cerca de la medianoche el `now()` de la prueba y el del validador pueden caer en días distintos. En los dos casos la prueba deja de ser repetible (la R de FIRST). En las de integración también cambié el reloj real por el `RelojFijo`, con un `@TestConfiguration` y `@Primary`, para que la frontera entre hoy y mañana también se pruebe por HTTP con una fecha fija.
+**Sin el `RelojFijo`**, la prueba de "mañana" usaría `LocalDate.now()` o una fecha escrita a mano. La escrita a mano falla al otro día, porque el 22 se vuelve "hoy", y con `now()` el resultado depende de la hora (cerca de medianoche puede caer en otro día). La prueba dejaría de ser repetible. En integración también lo puse, con `@TestConfiguration` y `@Primary`, para probar hoy y mañana por HTTP con fecha fija.
 
-**¿Por qué un mock y no un fake?** Un fake (un repositorio en memoria con un `HashMap`) también hubiera servido. No lo usé porque esas pruebas son sobre lo que el servicio hace o no hace con el repositorio, y con el mock eso se escribe directo (`never().save`). Con un fake me tocaba implementar los métodos de `JpaRepository` que uso y después revisar el estado. Y sin ningún doble, el servicio necesitaría una base de datos y la prueba ya sería de integración, más lenta y sin aislar.
-
-No usé dummy porque ningún método recibe un parámetro que no se use. Tampoco spy, porque el `verify` de Mockito ya me da lo mismo que daría un spy (revisar las llamadas después). En las de integración no cambié la base por un doble, porque justo lo que quiero probar ahí es la colaboración real con JPA, y H2 en memoria es rápida y se vacía antes de cada prueba. La API no habla con ningún servicio externo, entonces no hizo falta un servidor simulado.
+**Mock y no fake:** un repositorio en memoria también servía, pero lo que reviso es lo que el servicio hace o no hace con el repositorio, y eso con el mock se escribe directo. Sin doble, el servicio necesitaría una base y la prueba ya sería de integración. No usé dummy porque ningún método recibe parámetros que no se usen, ni spy porque el `verify` ya me da eso. En integración no reemplacé la base porque ahí lo que quiero probar es justo la colaboración con JPA.
 
 ## 5. Lo que no probé
 
-- **Getters y setters de la entidad y del record.** No tienen lógica. Probarlos sería probar Java y solo subiría la cobertura sin detectar nada. Igual se ejecutan en todas las pruebas de integración.
-- **`RelojDelSistema.hoy()`.** Es una sola línea: `return LocalDate.now()`. Para probarla tendría que compararla contra `LocalDate.now()`, que es probar la librería, y además vuelve a meter el no determinismo que quería sacar.
-- **`AvistamientosApplication.main`.** Solo arranca Spring. Que la app arranca ya lo revisa `contextLoads` y, en la práctica, todas las pruebas de integración.
-- **Los métodos del repositorio (`save`, `findById`, etc.).** La interfaz `AvistamientoRepository` sí la creé, pero está vacía: solo extiende `JpaRepository<Avistamiento, Long>`. El código de `save`, `findById`, `existsById` y `deleteById` lo genera Spring Data cuando arranca la app, entonces probarlos aparte sería probar Spring y no mi lógica. Igual las pruebas de integración los usan con una base real (por ejemplo, el GET después del POST), y con eso me basta.
-- **Los límites del lugar y del observador por HTTP.** Están probados en las unitarias del validador, pero no los repetí uno por uno en integración. Ya hay pruebas de integración que muestran que cualquier error del validador sale como 400 con su campo (la de especie, la de fecha y la de "incompleto", que cubre lugar y observador). Repetir cada límite por HTTP sería más lento y no detectaría nada nuevo.
-- **La generación del contrato OpenAPI y Swagger UI.** Es documentación que genera springdoc. La revisé abriéndola, y una prueba automática de eso sería frágil y no protege la regla de negocio.
+- **Getters y setters:** no tienen lógica, probarlos solo subiría la cobertura. Igual se ejecutan en las de integración.
+- **`RelojDelSistema.hoy()`:** es `return LocalDate.now()`. Probarla sería probar Java y meter otra vez el no determinismo.
+- **`main` de la aplicación:** solo arranca Spring, y eso ya lo revisa `contextLoads`.
+- **Los métodos del repositorio:** la interfaz la creé yo, pero está vacía (extiende `JpaRepository`). El código de `save` o `findById` lo genera Spring Data, entonces probarlos sería probar Spring. Igual se usan en integración con una base real.
+- **Los límites del lugar y del observador por HTTP:** ya están en las unitarias, y la integración ya muestra que cualquier error del validador sale como 400 con su campo. Repetirlos no detectaría nada nuevo.
 
 ## 6. Lectura de la cobertura
 
-Corrí `mvnw.cmd verify` (JaCoCo 0.8.15). Salieron 47 pruebas y 0 fallas, y el reporte quedó en `target/site/jacoco/index.html`. Este es el resumen en texto (`jacoco.csv`):
+`mvnw.cmd verify` con JaCoCo: 47 pruebas, 0 fallas. El criterio de cobertura más exigente es el de ramas (que cada `if` se pruebe por el lado verdadero y por el falso), así que miré ramas además de líneas:
 
-| Clase | Líneas | Ramas | Instrucciones |
-|---|---|---|---|
-| `AvistamientoService` | 34/34 | 8/8 | 100 % |
-| `ValidadorDeAvistamiento` | 47/49 | 29/30 | 96,2 % |
-| `AvistamientoController` | 12/12 | 2/2 | 100 % |
-| `ManejadorErrores` | 3/3 | — | 100 % |
-| `DatosInvalidosException` | 4/4 | — | 100 % |
-| `Avistamiento` (entidad) | 11/11 | — | 100 % |
-| `AvistamientoRequest` | 1/1 | — | 100 % |
-| `RelojDelSistema` | 1/2 | — | 60 % |
-| `AvistamientosApplication` | 1/3 | — | 37,5 % |
-| **Total** | **114/119 (95,8 %)** | **39/40 (97,5 %)** | **96,9 %** |
+| Clase | Líneas | Ramas |
+|---|---|---|
+| `ValidadorDeAvistamiento` | 47/49 | 29/30 |
+| Servicio, controller, manejador de errores, entidad y DTO | todas | todas |
+| `RelojDelSistema` y `AvistamientosApplication` | 2/5 | — |
+| **Total** | **114/119 (95,8 %)** | **39/40 (97,5 %)** |
 
-Miré dos criterios de cobertura: líneas (qué sentencias se ejecutaron) y ramas (si cada `if` se probó por el lado verdadero y por el falso). El de ramas es más exigente, porque una línea con un `if` puede salir cubierta aunque solo se haya probado uno de los dos caminos.
+**Para qué me sirvió.** La primera vez, con 41 pruebas, el validador iba en 26 de 30 ramas, y las que faltaban eran las de mis validaciones propias. Ahí vi que si alguien dañaba la expresión regular del observador nadie se iba a dar cuenta, y por eso agregué esos 6 casos.
 
-**Para qué me sirvió el reporte.** La primera vez que lo corrí, con 41 pruebas, el validador iba en 26 de 30 ramas. Las 4 que faltaban eran justo las de mis validaciones propias: el largo máximo del lugar, el del observador y el formato del observador. Al verlas en rojo me di cuenta de que si alguien dañaba la expresión regular del observador, ninguna prueba lo iba a notar, y esa regla sí la ve el usuario (le sale un 400 con un mensaje). Como el taller deja usar las validaciones propias, agregué esos casos a la tabla de la sección 2 (6 pruebas más). Ahora el validador está en 29 de 30 ramas, y en la sección 3 está cómo comprobé que esas pruebas sí detectan los defectos.
+**Lo que sigue sin cubrir:** la rama `datos == null` del validador, a la que por HTTP no se llega porque Spring responde 400 antes si falta el body (una prueba ahí no protege nada que el usuario vea); `RelojDelSistema.hoy()`, y que nunca se ejecute confirma que ninguna prueba depende del reloj real; y el `main`, que `@SpringBootTest` no usa.
 
-Lo que sigue sin cubrir y por qué lo dejé así:
+**Conclusión.** JaCoCo cuenta líneas ejecutadas, no verificadas: una prueba sin `assert` también sube el porcentaje. Lo que muestra que las pruebas sirven son los `assert` y el experimento de la sección 3; lo útil del reporte fue ver dónde no había pruebas y decidir si eso era un riesgo.
 
-- **La rama `datos == null` del validador (3 líneas).** Por HTTP no se llega ahí: si el body es `null` o no viene, Spring lanza `HttpMessageNotReadableException` antes de llegar al validador, y la API ya responde 400 (lo probé con curl). La dejé como protección por si otro código llama al validador directo. La prueba unitaria serían tres líneas, pero no protege nada que un usuario de la API pueda ver, entonces no la escribí.
-- **`RelojDelSistema.hoy()` no se ejecutó nunca.** Eso está bien, porque confirma que ninguna prueba depende del reloj real: todas usan el `RelojFijo`. No vale la pena probarla, por lo que expliqué en la sección 5.
-- **`AvistamientosApplication.main`.** `@SpringBootTest` arranca el contexto sin pasar por el `main`. Son dos líneas que solo llaman a Spring, no vale la pena.
-
-**Conclusión.** Que haya 97,5 % de ramas no quiere decir que la API esté 97,5 % bien probada. JaCoCo cuenta líneas ejecutadas, no verificadas: una prueba sin ningún `assert` también sube la cobertura. Por ejemplo, `ManejadorErrores` sale en 100 %, pero lo que de verdad muestra que funciona son los `assert` sobre el 400 y el mensaje, y el experimento de la sección 3 donde lo borré y fallaron 5 pruebas. Para mí lo útil del reporte fue ver dónde no había ninguna prueba y decidir caso por caso si eso era un riesgo o no. En el caso del observador sí lo era.
-
-**Captura del reporte de JaCoCo** (`target/site/jacoco/index.html`). El reporte redondea los porcentajes hacia abajo: por eso muestra 96 % de instrucciones (14 perdidas de 458) y 97 % de ramas (1 perdida de 40), que en la tabla de arriba aparecen como 96,9 % y 97,5 %. Son los mismos datos.
+**Captura del reporte** (`target/site/jacoco/index.html`). JaCoCo redondea hacia abajo: su 96 % y 97 % son el 96,9 % de instrucciones y el 97,5 % de ramas.
 
 <img width="1917" height="550" alt="image" src="https://github.com/user-attachments/assets/7ec9a7e3-fd25-452a-a15e-cb432b23082b" />
-

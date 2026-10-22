@@ -1,10 +1,10 @@
 package co.edu.bosque.avistamientos;
 
 import co.edu.bosque.avistamientos.entity.Avistamiento;
-import com.jayway.jsonpath.JsonPath;
 import co.edu.bosque.avistamientos.reloj.Reloj;
 import co.edu.bosque.avistamientos.reloj.RelojFijo;
 import co.edu.bosque.avistamientos.repository.AvistamientoRepository;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -78,9 +78,16 @@ class AvistamientoControllerTest {
         return repository.save(a).getId();
     }
 
+    // Hace un POST con el cuerpo que le pasemos
+    private ResultActions postear(String cuerpo) throws Exception {
+        return mockMvc.perform(post("/avistamientos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(cuerpo));
+    }
+
     // Saca el id del JSON de respuesta, para poder consultarlo después
-    private static Long idDe(MvcResult resultado) throws Exception {
-        String cuerpo = resultado.getResponse().getContentAsString();
+    private static Long idDe(ResultActions respuesta) throws Exception {
+        String cuerpo = respuesta.andReturn().getResponse().getContentAsString();
         Number id = JsonPath.read(cuerpo, "$.id");
         return id.longValue();
     }
@@ -92,9 +99,11 @@ class AvistamientoControllerTest {
         // Arrange
         guardar("colibri");
 
-        // Act + Assert
-        mockMvc.perform(get("/avistamientos"))
-                .andExpect(status().isOk())
+        // Act
+        ResultActions respuesta = mockMvc.perform(get("/avistamientos"));
+
+        // Assert
+        respuesta.andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].especie").value("colibri"));
     }
@@ -104,9 +113,11 @@ class AvistamientoControllerTest {
         // Arrange
         Long id = guardar("colibri");
 
-        // Act + Assert
-        mockMvc.perform(get("/avistamientos/" + id))
-                .andExpect(status().isOk())
+        // Act
+        ResultActions respuesta = mockMvc.perform(get("/avistamientos/" + id));
+
+        // Assert
+        respuesta.andExpect(status().isOk())
                 .andExpect(jsonPath("$.especie").value("colibri"))
                 .andExpect(jsonPath("$.fecha").value("2026-09-29"));
     }
@@ -115,9 +126,11 @@ class AvistamientoControllerTest {
     void obtener_idInexistente_devuelve404() throws Exception {
         // Arrange: base vacía (la deja así el @BeforeEach)
 
-        // Act + Assert
-        mockMvc.perform(get("/avistamientos/999"))
-                .andExpect(status().isNotFound());
+        // Act
+        ResultActions respuesta = mockMvc.perform(get("/avistamientos/999"));
+
+        // Assert
+        respuesta.andExpect(status().isNotFound());
     }
 
     @Test
@@ -127,9 +140,11 @@ class AvistamientoControllerTest {
         guardar("colibri");
         guardar("tucan");
 
-        // Act + Assert
-        mockMvc.perform(get("/avistamientos/resumen"))
-                .andExpect(status().isOk())
+        // Act
+        ResultActions respuesta = mockMvc.perform(get("/avistamientos/resumen"));
+
+        // Assert
+        respuesta.andExpect(status().isOk())
                 .andExpect(jsonPath("$.colibri").value(2))
                 .andExpect(jsonPath("$.tucan").value(1));
     }
@@ -142,16 +157,12 @@ class AvistamientoControllerTest {
         String cuerpo = json("tucan", "2026-09-28");
 
         // Act
-        MvcResult resultado = mockMvc.perform(post("/avistamientos")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(cuerpo))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
-                .andReturn();
+        ResultActions respuesta = postear(cuerpo);
 
-        // Assert: el efecto, que se pueda consultar después
-        Long id = idDe(resultado);
-        mockMvc.perform(get("/avistamientos/" + id))
+        // Assert: la respuesta y el efecto (que se pueda consultar después)
+        respuesta.andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").exists());
+        mockMvc.perform(get("/avistamientos/" + idDe(respuesta)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.especie").value("tucan"))
                 .andExpect(jsonPath("$.fecha").value("2026-09-28"));
@@ -162,11 +173,11 @@ class AvistamientoControllerTest {
         // Arrange
         String cuerpo = json("tucan", HOY.toString());
 
-        // Act + Assert
-        mockMvc.perform(post("/avistamientos")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(cuerpo))
-                .andExpect(status().isCreated());
+        // Act
+        ResultActions respuesta = postear(cuerpo);
+
+        // Assert
+        respuesta.andExpect(status().isCreated());
     }
 
     @Test
@@ -175,13 +186,11 @@ class AvistamientoControllerTest {
         String cuerpo = json("tucan", HOY.plusDays(1).toString());
 
         // Act
-        mockMvc.perform(post("/avistamientos")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(cuerpo))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.fecha").value("la fecha no puede ser posterior a hoy"));
+        ResultActions respuesta = postear(cuerpo);
 
-        // Assert: no quedó nada guardado
+        // Assert: el error y que no quedó nada guardado
+        respuesta.andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fecha").value("la fecha no puede ser posterior a hoy"));
         assertThat(repository.count()).isZero();
     }
 
@@ -190,11 +199,11 @@ class AvistamientoControllerTest {
         // Arrange
         String cuerpo = json("ab", "2026-09-28");
 
-        // Act + Assert
-        mockMvc.perform(post("/avistamientos")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(cuerpo))
-                .andExpect(status().isBadRequest())
+        // Act
+        ResultActions respuesta = postear(cuerpo);
+
+        // Assert
+        respuesta.andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.especie").value("la especie debe tener entre 3 y 50 caracteres"));
     }
 
@@ -203,11 +212,11 @@ class AvistamientoControllerTest {
         // Arrange
         String cuerpo = json("tucan", "2026-13-45");
 
-        // Act + Assert
-        mockMvc.perform(post("/avistamientos")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(cuerpo))
-                .andExpect(status().isBadRequest())
+        // Act
+        ResultActions respuesta = postear(cuerpo);
+
+        // Assert
+        respuesta.andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fecha").value("la fecha no existe en el calendario"));
     }
 
@@ -216,11 +225,11 @@ class AvistamientoControllerTest {
         // Arrange
         String cuerpo = "{\"especie\":\"tucan\"}";
 
-        // Act + Assert
-        mockMvc.perform(post("/avistamientos")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(cuerpo))
-                .andExpect(status().isBadRequest())
+        // Act
+        ResultActions respuesta = postear(cuerpo);
+
+        // Assert
+        respuesta.andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.lugar").value("el lugar es obligatorio"))
                 .andExpect(jsonPath("$.fecha").value("la fecha es obligatoria"))
                 .andExpect(jsonPath("$.observador").value("el observador es obligatorio"));
@@ -231,11 +240,11 @@ class AvistamientoControllerTest {
         // Arrange
         String cuerpo = "{\"especie\":\"tucan\",";
 
-        // Act + Assert
-        mockMvc.perform(post("/avistamientos")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(cuerpo))
-                .andExpect(status().isBadRequest())
+        // Act
+        ResultActions respuesta = postear(cuerpo);
+
+        // Assert
+        respuesta.andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").exists());
     }
 
@@ -247,13 +256,13 @@ class AvistamientoControllerTest {
         Long id = guardar("colibri");
 
         // Act
-        mockMvc.perform(put("/avistamientos/" + id)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json("tucan", "2026-09-28")))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(id));
+        ResultActions respuesta = mockMvc.perform(put("/avistamientos/" + id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json("tucan", "2026-09-28")));
 
-        // Assert: el efecto, en la base quedó el dato nuevo
+        // Assert: la respuesta y el efecto (en la base quedó el dato nuevo)
+        respuesta.andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id));
         assertThat(repository.findById(id)).get()
                 .extracting(Avistamiento::getEspecie).isEqualTo("tucan");
     }
@@ -264,13 +273,13 @@ class AvistamientoControllerTest {
         Long id = guardar("colibri");
 
         // Act
-        mockMvc.perform(put("/avistamientos/" + id)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json("ab", "2026-09-28")))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.especie").exists());
+        ResultActions respuesta = mockMvc.perform(put("/avistamientos/" + id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json("ab", "2026-09-28")));
 
-        // Assert: sigue el dato original
+        // Assert: el error y que sigue el dato original
+        respuesta.andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.especie").exists());
         assertThat(repository.findById(id)).get()
                 .extracting(Avistamiento::getEspecie).isEqualTo("colibri");
     }
@@ -279,11 +288,13 @@ class AvistamientoControllerTest {
     void actualizar_idInexistente_devuelve404() throws Exception {
         // Arrange: base vacía
 
-        // Act + Assert
-        mockMvc.perform(put("/avistamientos/999")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json("tucan", "2026-09-28")))
-                .andExpect(status().isNotFound());
+        // Act
+        ResultActions respuesta = mockMvc.perform(put("/avistamientos/999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json("tucan", "2026-09-28")));
+
+        // Assert
+        respuesta.andExpect(status().isNotFound());
     }
 
     // ---------- DELETE ----------
@@ -294,10 +305,10 @@ class AvistamientoControllerTest {
         Long id = guardar("colibri");
 
         // Act
-        mockMvc.perform(delete("/avistamientos/" + id))
-                .andExpect(status().isNoContent());
+        ResultActions respuesta = mockMvc.perform(delete("/avistamientos/" + id));
 
-        // Assert: el efecto, ya no se puede consultar
+        // Assert: la respuesta y el efecto (ya no se puede consultar)
+        respuesta.andExpect(status().isNoContent());
         mockMvc.perform(get("/avistamientos/" + id))
                 .andExpect(status().isNotFound());
     }
@@ -306,8 +317,10 @@ class AvistamientoControllerTest {
     void eliminar_idInexistente_devuelve404() throws Exception {
         // Arrange: base vacía
 
-        // Act + Assert
-        mockMvc.perform(delete("/avistamientos/999"))
-                .andExpect(status().isNotFound());
+        // Act
+        ResultActions respuesta = mockMvc.perform(delete("/avistamientos/999"));
+
+        // Assert
+        respuesta.andExpect(status().isNotFound());
     }
 }

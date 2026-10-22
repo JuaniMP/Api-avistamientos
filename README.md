@@ -206,11 +206,11 @@ Con la base vacía (sin carpeta `data/`), se pueden correr en orden de la 1 a la
 
 ## Pruebas
 
-Hay 41 pruebas en `src/test/java`, en dos niveles:
+Hay 47 pruebas en `src/test/java`, en dos niveles:
 
 | Nivel | Clase | Pruebas | Qué prueba |
 |---|---|---|---|
-| Unitaria | `ValidadorDeAvistamientoTest` | 17 | La regla de negocio, con los valores límite (especie de 2, 3, 50 y 51 caracteres; fecha de hoy y de mañana). Usa un `RelojFijo` (stub) |
+| Unitaria | `ValidadorDeAvistamientoTest` | 23 | La regla de negocio, con los valores límite (especie de 2, 3, 50 y 51 caracteres; fecha de hoy y de mañana; lugar de 150 y 151; observador de 100 y 101). Usa un `RelojFijo` (stub) |
 | Unitaria | `AvistamientoServiceTest` | 7 | El servicio, con el repositorio reemplazado por un mock de Mockito |
 | Integración | `AvistamientoControllerTest` | 16 | Los endpoints por HTTP con `@SpringBootTest` y MockMvc: códigos 200, 201, 204, 400 y 404, el cuerpo de la respuesta y el efecto en la base |
 | Integración | `AvistamientosApplicationTests` | 1 | Que la aplicación arranque |
@@ -254,7 +254,7 @@ Resultado de `./mvnw test`:
 
 También se probó en Windows con Java 26, desde IntelliJ IDEA y Postman.
 
-> Esa verificación es de la versión del 29 de septiembre (14 pruebas). Con el taller de pruebas de la Sesión 22 la suite pasó a 41 pruebas.
+> Esa verificación es de la versión del 29 de septiembre (14 pruebas). Con el taller de pruebas de la Sesión 22 la suite pasó a 47 pruebas.
 
 ## Problemas comunes
 

@@ -3,7 +3,7 @@
 Taller de pruebas unitarias y de integración. Ingeniería de Software 2, Sesión 22 (21 de octubre de 2026).
 Juanita Mejía Pineda.
 
-El repositorio tiene 41 pruebas: 24 unitarias (17 del validador y 7 del servicio) y 17 de integración (16 de los endpoints y la que revisa que la aplicación arranque). Los comandos para correrlas y para la cobertura están en el README.
+El repositorio tiene 47 pruebas: 30 unitarias (23 del validador y 7 del servicio) y 17 de integración (16 de los endpoints y la que revisa que la aplicación arranque). Los comandos para correrlas y para la cobertura están en el README.
 
 ## 1. Qué cambió en el código
 
@@ -44,9 +44,24 @@ Apliqué **partición de equivalencia**: dividir la entrada en clases que el sis
 | `"2026-02-30"` | Inválido (no existe) | Error: "no existe en el calendario" | Tiene el formato correcto pero el día no existe (2026 no es bisiesto). Lo elegí en vez de `2026-13-45` porque un parser permisivo no lo rechaza: lo convierte en silencio en otra fecha (el 28 de febrero o el 2 de marzo, según el modo). Un mes 13, en cambio, lo rechaza cualquiera. El `2026-13-45` quedó en la prueba de integración |
 | `null` | Inválido (clase vacía) | Error: "la fecha es obligatoria" | Para el caso en que el campo no viene en el JSON |
 
-**Lugar y observador** (regla: no vacíos). Probé `"   "` (solo espacios) para el lugar y `""` para el observador. El de solo espacios es el más interesante: `isEmpty()` diría que no está vacío, pero `isBlank()` sí lo detecta. Por último, una prueba con los cuatro campos mal a la vez revisa que el validador reporte **todos** los errores y no se quede en el primero.
+**Lugar y observador.** La regla del taller solo pide que no estén vacíos, pero el taller también dice que si uno ya tiene validaciones propias las puede usar. Yo ya tenía de septiembre un largo máximo para los dos (150 y 100) y un formato para el observador, así que también los particioné y probé sus límites:
 
-En total son 17 pruebas unitarias del validador, con los seis límites que pide el taller.
+| Campo | Valor | Tipo de caso | Resultado esperado | Por qué ese valor |
+|---|---|---|---|---|
+| Lugar | `"   "` | Inválido (vacío) | Error: "el lugar es obligatorio" | Solo espacios: `isEmpty()` diría que no está vacío, pero `isBlank()` sí lo detecta. Es el caso vacío más engañoso |
+| Lugar | `"Humedal La Conejera"` | Representativo válido | Sin errores | Un lugar normal (está en la prueba de "todo válido") |
+| Lugar | 150 letras | Límite válido | Sin errores | El último valor válido |
+| Lugar | 151 letras | Límite inválido | Error: "no puede tener más de 150 caracteres" | El primer valor de la clase "muy largo" |
+| Observador | `""` | Inválido (vacío) | Error: "el observador es obligatorio" | La clase "no hay dato" |
+| Observador | `"Juanita"` | Representativo válido | Sin errores | Un nombre normal (está en la prueba de "todo válido") |
+| Observador | `"María-José O'Neil Jr."` | Representativo válido | Sin errores | Usa todos los caracteres especiales permitidos (tilde, guion, apóstrofe, punto). Si alguien "simplifica" la expresión regular, este caso lo detecta |
+| Observador | 100 letras | Límite válido | Sin errores | El último valor válido |
+| Observador | 101 letras | Límite inválido | Error: "no puede tener más de 100 caracteres" | El primer valor de la clase "muy largo" |
+| Observador | `"Juanita123"` | Inválido (formato) | Error: "solo puede tener letras…" | Largo válido, pero con números. Es otra clase, igual que `"------"` en la especie |
+
+Por último, una prueba con los cuatro campos mal a la vez revisa que el validador reporte **todos** los errores y no se quede en el primero.
+
+En total son 23 pruebas unitarias del validador. Incluyen los seis límites que pide el taller (especie de 2, 3, 50 y 51; fecha de hoy y de mañana) y los de mis validaciones propias.
 
 ## 3. Por qué cada nivel
 
@@ -58,7 +73,7 @@ En total son 17 pruebas unitarias del validador, con los seis límites que pide 
 
 - que el JSON se mapee bien al `AvistamientoRequest` (si un campo se llamara distinto, llegaría `null`);
 - que el controlador realmente llame al servicio y el servicio al validador;
-- que `ManejadorErrores` convierta la `DatosInvalidosException` en un **400** con el JSON campo → mensaje. Lo comprobé: borré ese método y las 24 pruebas unitarias siguieron en verde, mientras que 5 de integración fallaron, porque la excepción se escapaba y la API habría respondido 500;
+- que `ManejadorErrores` convierta la `DatosInvalidosException` en un **400** con el JSON campo → mensaje. Lo comprobé: borré ese método y las 30 pruebas unitarias siguieron en verde, mientras que 5 de integración fallaron, porque la excepción se escapaba y la API habría respondido 500;
 - que un JSON mal escrito también dé 400;
 - que el avistamiento quede **guardado de verdad**: después del POST hago un GET al id nuevo y debe devolverlo.
 
@@ -66,7 +81,7 @@ Por eso las pruebas de integración revisan el cuerpo y el efecto, no solo el c�
 
 Algunos casos están en los dos niveles, como la fecha de mañana, la de hoy y la especie de 2. No es repetir lo mismo: la unitaria prueba la regla y la de integración prueba que esa regla está **conectada** y que el reloj inyectado en el contexto de Spring es el que se usa.
 
-**¿Las pruebas detectan defectos de verdad?** Una prueba que pasa no demuestra que el código esté bien (primer principio). Para revisar que mis pruebas no pasaran "por pasar", metí a propósito cuatro defectos típicos en el validador, uno a la vez, y corrí la suite:
+**¿Las pruebas detectan defectos de verdad?** Una prueba que pasa no demuestra que el código esté bien (primer principio). Para revisar que mis pruebas no pasaran "por pasar", metí a propósito ocho defectos típicos en el validador, uno a la vez, y corrí la suite:
 
 | Defecto introducido | Pruebas que fallaron |
 |---|---|
@@ -74,8 +89,12 @@ Algunos casos están en los dos niveles, como la fecha de mañana, la de hoy y l
 | Máximo de la especie en 51 en vez de 50 | 4, entre ellas `especieDe51Caracteres` |
 | `!isBefore(hoy)` en vez de `isAfter(hoy)` (rechaza también hoy) | 2: `fechaDeHoy` unitaria y de integración |
 | Quitar el `trim()` de la especie | 2: `especieDe2LetrasRodeadaDeEspacios` y la del servicio que revisa los datos limpios |
+| Máximo del lugar en 151 en vez de 150 | 1: `lugarDe151Caracteres` |
+| Máximo del observador en 99 en vez de 100 | 2: `observadorDe100Caracteres` y `observadorDe101Caracteres` |
+| Expresión regular del observador que acepta cualquier cosa | 1: `observadorConNumeros` |
+| Expresión regular del observador sin punto, guion ni apóstrofe | 1: `observadorConPuntoGuionYApostrofe` |
 
-Cada defecto lo detectó justo la prueba de su valor límite. Es lo mismo que el ejemplo de clase del envío gratis: solo el valor que está en el borde detecta el `>` en vez de `>=`.
+Cada defecto lo detectó justo la prueba de su valor límite o de su clase. Es lo mismo que el ejemplo de clase del envío gratis: solo el valor que está en el borde detecta el `>` en vez de `>=`.
 
 ## 4. Los dobles
 
@@ -96,17 +115,17 @@ No usé **dummy** porque ningún método recibe un parámetro que no se use. Tam
 - **`RelojDelSistema.hoy()`.** Es una línea: `return LocalDate.now()`. Para probarla tendría que compararla contra `LocalDate.now()`, que es probar la librería y además mete otra vez el no determinismo que quise sacar.
 - **`AvistamientosApplication.main`.** Solo arranca Spring. Que la aplicación arranca ya lo verifica `contextLoads` y, de hecho, todas las pruebas de integración.
 - **Los métodos del repositorio (`save`, `findById`, …).** Son de Spring Data JPA, no míos. Las pruebas de integración los usan con una base real, y eso me basta.
-- **Los límites de lugar (150) y observador (100) y el formato del observador.** Vienen de la versión de septiembre y no son parte de la regla del taller. Les di menos prioridad por riesgo: son reglas de "largo máximo" del mismo estilo que la de la especie, que sí está probada con sus límites. Si el profe lo pide, son dos pruebas más del mismo estilo.
+- **Los límites del lugar y el observador por HTTP.** Están probados en las unitarias del validador, pero no repetí cada uno en las de integración. Ya hay pruebas de integración que demuestran que cualquier error del validador sale como 400 con su campo (especie, fecha y la de "incompleto", que cubre lugar y observador). Repetir cada límite por HTTP sería más lento y no detectaría nada nuevo.
 - **La generación del contrato OpenAPI y Swagger UI.** Son documentación generada por springdoc. La revisé abriéndola, y una prueba automática de eso sería frágil y no protege la regla de negocio.
 
 ## 6. Lectura de la cobertura
 
-Corrí `mvnw.cmd verify` en mi PC (Windows, Java 26). Resultado: 41 pruebas, 0 fallas, y el reporte de JaCoCo quedó en `target/site/jacoco/index.html`. Este es el resumen en texto (`jacoco.csv`):
+Corrí `mvnw.cmd verify` (JaCoCo 0.8.15). Resultado: 47 pruebas, 0 fallas, y el reporte quedó en `target/site/jacoco/index.html`. Este es el resumen en texto (`jacoco.csv`):
 
 | Clase | Líneas | Ramas | Instrucciones |
 |---|---|---|---|
 | `AvistamientoService` | 34/34 | 8/8 | 100 % |
-| `ValidadorDeAvistamiento` | 44/49 | 26/30 | 87,4 % |
+| `ValidadorDeAvistamiento` | 47/49 | 29/30 | 96,2 % |
 | `AvistamientoController` | 12/12 | 2/2 | 100 % |
 | `ManejadorErrores` | 3/3 | — | 100 % |
 | `DatosInvalidosException` | 4/4 | — | 100 % |
@@ -114,13 +133,16 @@ Corrí `mvnw.cmd verify` en mi PC (Windows, Java 26). Resultado: 41 pruebas, 0 f
 | `AvistamientoRequest` | 1/1 | — | 100 % |
 | `RelojDelSistema` | 1/2 | — | 60 % |
 | `AvistamientosApplication` | 1/3 | — | 37,5 % |
-| **Total** | **111/119 (93,3 %)** | **36/40 (90 %)** | **93,4 %** |
+| **Total** | **114/119 (95,8 %)** | **39/40 (97,5 %)** | **96,9 %** |
 
-Miré dos criterios de cobertura: **líneas** (qué sentencias se ejecutaron) y **ramas** (si cada `if` se probó por el lado verdadero y por el falso). El de ramas es más exigente: una línea con un `if` puede salir "cubierta" aunque solo se haya probado uno de sus dos caminos. Lo que quedó sin cubrir:
+Miré dos criterios de cobertura: **líneas** (qué sentencias se ejecutaron) y **ramas** (si cada `if` se probó por el lado verdadero y por el falso). El de ramas es más exigente: una línea con un `if` puede salir "cubierta" aunque solo se haya probado uno de sus dos caminos.
 
+**Cómo me sirvió el reporte.** La primera vez que lo corrí, con 41 pruebas, el validador estaba en 26 de 30 ramas. Las 4 ramas sin cubrir eran justo las de mis validaciones propias: largo máximo del lugar, largo máximo del observador y formato del observador. Al verlo en rojo me di cuenta de que, si alguien dañaba la expresión regular del observador, **ninguna prueba lo iba a detectar**, y esa regla sí la ve el usuario (un 400 con un mensaje). Como el taller permite usar las validaciones propias, agregué sus casos a la tabla de la sección 2 (6 pruebas más). Ahora el validador tiene 29 de 30 ramas y comprobé que esas pruebas detectan los defectos (sección 3).
+
+Lo que sigue sin cubrir, y por qué lo dejo así:
+
+- **La rama `datos == null` del validador (3 líneas).** Por HTTP no se puede llegar ahí: si el body es `null` o no viene, Spring lanza `HttpMessageNotReadableException` antes de llegar al validador, y la API ya responde 400 (lo probé con curl). La dejé como protección por si otro código llama al validador directamente. Una prueba unitaria sería de tres líneas, pero no protege ningún comportamiento que un usuario de la API pueda ver, así que **no la escribí**.
 - **`RelojDelSistema.hoy()` (la línea `return LocalDate.now()`) no se ejecutó nunca.** Eso es bueno: confirma que ninguna prueba depende del reloj real, porque todas usan el `RelojFijo`. **No vale la pena** probarla, por lo que expliqué en la sección 5.
 - **`AvistamientosApplication.main`.** `@SpringBootTest` arranca el contexto sin pasar por `main`. Son dos líneas que solo llaman a Spring. **No vale la pena.**
-- **La rama `datos == null` del validador (3 líneas).** Por HTTP no se puede llegar ahí: si el body es `null` o no viene, Spring lanza `HttpMessageNotReadableException` antes de llegar al validador, y la API ya responde 400 (lo probé con curl). La dejé como protección por si otro código llama al validador directamente. Una prueba unitaria sería de tres líneas, pero no protege ningún comportamiento que un usuario de la API pueda ver, así que **no la escribí**.
-- **Las ramas de largo máximo del lugar (150) y del observador (100) y la del formato del observador (4 ramas, 5 líneas).** Es justo lo que decidí no probar en la sección 5, y el reporte lo confirma. Pero al leerlo cambié un poco de opinión sobre una de ellas: si alguien daña la expresión regular del observador, **ninguna prueba lo detectaría**, y esa regla sí la ve el usuario (un 400 con un mensaje). Esa **sí valdría una prueba**, y sería la siguiente que escribiría: un observador como `"Juanita123"` debe dar 400. Las de largo máximo las dejo así porque usan el mismo mecanismo que la especie, que sí está probado con sus límites.
 
-**Lo que concluyo.** El 90 % de ramas no significa que la API esté 90 % bien probada. JaCoCo cuenta líneas **ejecutadas**, no **verificadas**: una prueba sin ningún `assert` subiría la cobertura igual. Por ejemplo, `ManejadorErrores` sale al 100 %, pero lo que de verdad demuestra que funciona son los `assert` sobre el 400 y el mensaje, y el experimento de la sección 3 donde lo borré y fallaron 5 pruebas. Lo útil del reporte fue mostrarme **dónde no hay ninguna prueba** y obligarme a decidir, caso por caso, si eso es un riesgo o no.
+**Lo que concluyo.** El 97,5 % de ramas no significa que la API esté 97,5 % bien probada. JaCoCo cuenta líneas **ejecutadas**, no **verificadas**: una prueba sin ningún `assert` subiría la cobertura igual. Por ejemplo, `ManejadorErrores` sale al 100 %, pero lo que de verdad demuestra que funciona son los `assert` sobre el 400 y el mensaje, y el experimento de la sección 3 donde lo borré y fallaron 5 pruebas. Lo útil del reporte fue mostrarme **dónde no había ninguna prueba** y obligarme a decidir, caso por caso, si eso era un riesgo o no. En el caso del observador, sí lo era.

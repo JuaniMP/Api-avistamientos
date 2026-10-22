@@ -38,6 +38,16 @@ class ValidadorDeAvistamientoTest {
         return new AvistamientoRequest(especie, v.lugar(), v.fecha(), v.observador());
     }
 
+    private static AvistamientoRequest conLugar(String lugar) {
+        AvistamientoRequest v = valido();
+        return new AvistamientoRequest(v.especie(), lugar, v.fecha(), v.observador());
+    }
+
+    private static AvistamientoRequest conObservador(String observador) {
+        AvistamientoRequest v = valido();
+        return new AvistamientoRequest(v.especie(), v.lugar(), v.fecha(), observador);
+    }
+
     private static AvistamientoRequest conFecha(String fecha) {
         AvistamientoRequest v = valido();
         return new AvistamientoRequest(v.especie(), v.lugar(), fecha, v.observador());
@@ -248,6 +258,81 @@ class ValidadorDeAvistamientoTest {
             // Assert
             assertThat(errores).containsOnlyKeys("observador");
             assertThat(errores.get("observador")).isEqualTo("el observador es obligatorio");
+        }
+
+        @Test
+        void validar_lugarDe150Caracteres_esValidoEnElLimiteSuperior() {
+            // Arrange
+            AvistamientoRequest datos = conLugar("a".repeat(150));
+
+            // Act
+            Map<String, String> errores = validador.validar(datos);
+
+            // Assert
+            assertThat(errores).isEmpty();
+        }
+
+        @Test
+        void validar_lugarDe151Caracteres_fallaPorEncimaDelMaximo() {
+            // Arrange
+            AvistamientoRequest datos = conLugar("a".repeat(151));
+
+            // Act
+            Map<String, String> errores = validador.validar(datos);
+
+            // Assert
+            assertThat(errores).containsOnlyKeys("lugar");
+            assertThat(errores.get("lugar")).isEqualTo("el lugar no puede tener más de 150 caracteres");
+        }
+
+        @Test
+        void validar_observadorDe100Caracteres_esValidoEnElLimiteSuperior() {
+            // Arrange
+            AvistamientoRequest datos = conObservador("a".repeat(100));
+
+            // Act
+            Map<String, String> errores = validador.validar(datos);
+
+            // Assert
+            assertThat(errores).isEmpty();
+        }
+
+        @Test
+        void validar_observadorDe101Caracteres_fallaPorEncimaDelMaximo() {
+            // Arrange
+            AvistamientoRequest datos = conObservador("a".repeat(101));
+
+            // Act
+            Map<String, String> errores = validador.validar(datos);
+
+            // Assert
+            assertThat(errores).containsOnlyKeys("observador");
+            assertThat(errores.get("observador")).isEqualTo("el observador no puede tener más de 100 caracteres");
+        }
+
+        @Test
+        void validar_observadorConPuntoGuionYApostrofe_esValido() {
+            // Arrange
+            AvistamientoRequest datos = conObservador("María-José O'Neil Jr.");
+
+            // Act
+            Map<String, String> errores = validador.validar(datos);
+
+            // Assert
+            assertThat(errores).isEmpty();
+        }
+
+        @Test
+        void validar_observadorConNumeros_fallaPorqueSoloAdmiteLetras() {
+            // Arrange
+            AvistamientoRequest datos = conObservador("Juanita123");
+
+            // Act
+            Map<String, String> errores = validador.validar(datos);
+
+            // Assert
+            assertThat(errores).containsOnlyKeys("observador");
+            assertThat(errores.get("observador")).startsWith("el observador solo puede tener letras");
         }
     }
 

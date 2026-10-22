@@ -66,7 +66,7 @@ Además, una prueba con los cuatro campos mal revisa que salgan todos los errore
 
 Por eso las de integración revisan el cuerpo y el efecto: después del PUT, que esté el dato nuevo; después de un PUT inválido, que siga el viejo; después del DELETE, que el GET dé 404. Hay éxito y error en cada endpoint donde aplica, y el `@BeforeEach` vacía la H2 en memoria para que no dependan del orden.
 
-Para revisar que no pasaran "por pasar", metí a propósito ocho defectos en el validador (por ejemplo mínimo 2 en vez de 3, `!isBefore` en vez de `isAfter`, quitar el `trim()`) y cada uno lo detectó la prueba de su límite o de su clase.
+Como las pruebas muestran que hay defectos pero no que no los hay (el primer principio), para revisar que no pasaran "por pasar" metí a propósito ocho defectos en el validador (por ejemplo mínimo 2 en vez de 3, `!isBefore` en vez de `isAfter`, quitar el `trim()`) y cada uno lo detectó la prueba de su límite o de su clase.
 
 ## 4. Los dobles
 
@@ -77,13 +77,13 @@ Para revisar que no pasaran "por pasar", metí a propósito ocho defectos en el 
 
 **Sin el `RelojFijo`**, la prueba de "mañana" usaría `LocalDate.now()` o una fecha escrita a mano. La escrita a mano falla al otro día, porque el 22 se vuelve "hoy", y con `now()` el resultado depende de la hora (cerca de medianoche puede caer en otro día). La prueba dejaría de ser repetible. En integración también lo puse, con `@TestConfiguration` y `@Primary`, para probar hoy y mañana por HTTP con fecha fija.
 
-**Mock y no fake:** un repositorio en memoria también servía, pero lo que reviso es lo que el servicio hace o no hace con el repositorio, y eso con el mock se escribe directo. Sin doble, el servicio necesitaría una base y la prueba ya sería de integración. No usé dummy porque ningún método recibe parámetros que no se usen, ni spy porque el `verify` ya me da eso. En integración no reemplacé la base porque ahí lo que quiero probar es justo la colaboración con JPA.
+**Mock y no fake:** un repositorio en memoria también servía, pero lo que reviso es lo que el servicio hace o no hace con el repositorio, y eso con el mock se escribe directo. Sin doble, la prueba ya sería de integración. No usé dummy porque ningún método recibe parámetros que no se usen, ni spy porque el `verify` ya me da eso. En integración no reemplacé la base porque ahí lo que quiero probar es justo la colaboración con JPA.
 
 ## 5. Lo que no probé
 
-- **Getters y setters:** no tienen lógica, probarlos solo subiría la cobertura. Igual se ejecutan en las de integración.
+- **Getters y setters:** no tienen lógica; igual se ejecutan en las de integración.
 - **`RelojDelSistema.hoy()`:** es `return LocalDate.now()`. Probarla sería probar Java y meter otra vez el no determinismo.
-- **`main` de la aplicación:** solo arranca Spring, y eso ya lo revisa `contextLoads`.
+- **`main`:** solo arranca Spring, y eso ya lo revisa `contextLoads`.
 - **Los métodos del repositorio:** la interfaz la creé yo, pero está vacía (extiende `JpaRepository`). El código de `save` o `findById` lo genera Spring Data, entonces probarlos sería probar Spring. Igual se usan en integración con una base real.
 - **Los límites del lugar y del observador por HTTP:** ya están en las unitarias, y la integración ya muestra que cualquier error del validador sale como 400 con su campo. Repetirlos no detectaría nada nuevo.
 

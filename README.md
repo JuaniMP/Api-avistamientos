@@ -2,6 +2,8 @@
 
 Taller de Ingeniería de Software 2 (Sesión 17). API REST para registrar avistamientos de aves, hecha con Spring Boot y base de datos H2 embebida.
 
+En la Sesión 22 se le agregaron la regla de negocio del taller de pruebas, pruebas unitarias con dobles, pruebas de integración y cobertura con JaCoCo. La justificación de esas pruebas está en [`docs/justificacion-pruebas.md`](docs/justificacion-pruebas.md).
+
 ## Requisitos
 
 - Java 21 o superior (`java -version` para verificar)
@@ -32,16 +34,26 @@ Para detenerla: `Ctrl + C`.
 ```
 src/main/java/co/edu/bosque/avistamientos/
 ├── AvistamientosApplication.java           Punto de entrada: arranca la aplicación
-├── entity/Avistamiento.java                El modelo: campos, reglas de validación y tabla en la base
+├── entity/Avistamiento.java                Lo que se guarda en la base (tabla avistamiento)
+├── dto/AvistamientoRequest.java            Lo que llega en el body del POST y el PUT (todo como texto)
+├── reloj/Reloj.java                        Interfaz que dice qué día es hoy
+├── reloj/RelojDelSistema.java              El reloj real (LocalDate.now())
+├── service/ValidadorDeAvistamiento.java    La regla de negocio: devuelve qué campos fallaron y por qué
+├── service/AvistamientoService.java        Los casos de uso: valida, convierte y usa el repositorio
 ├── repository/AvistamientoRepository.java  Habla con la base de datos (guardar, buscar, borrar)
-├── controller/AvistamientoController.java  Los endpoints: recibe las peticiones HTTP y responde en JSON
-└── exception/ManejadorErrores.java         Convierte los errores de validación en respuestas 400 con mensajes claros
+├── controller/AvistamientoController.java  Los endpoints: traduce entre HTTP y el servicio
+└── exception/
+    ├── DatosInvalidosException.java        La lanza el servicio cuando el validador encuentra errores
+    └── ManejadorErrores.java               Convierte esos errores en respuestas 400 con mensajes claros
 
 src/main/resources/application.properties   Configuración de la base H2 (guardada en archivo)
-src/test/java/...                           Pruebas de integración de todos los endpoints
+src/test/java/.../service/                  Pruebas unitarias del validador y del servicio
+src/test/java/.../reloj/RelojFijo.java      Doble de prueba (stub) del reloj
+src/test/java/.../AvistamientoControllerTest.java  Pruebas de integración de los endpoints por HTTP
 src/test/resources/application.properties   Base H2 en memoria, solo para las pruebas
 docs/openapi.yaml                           Contrato OpenAPI de la API (copia del que genera Swagger)
 docs/avistamientos.postman_collection.json  Colección de Postman con todas las peticiones
+docs/justificacion-pruebas.md               Justificación de las pruebas (taller de la Sesión 22)
 ```
 
 ## Modelo
@@ -51,9 +63,9 @@ Cada avistamiento tiene:
 | Campo | Tipo | Reglas |
 |---|---|---|
 | id | número | Lo asigna el sistema (si se envía en el POST, se ignora) |
-| especie | texto | Obligatorio. Solo letras, espacios, guiones o apóstrofes, y debe empezar con letra. Máximo 100 caracteres |
-| lugar | texto | Obligatorio. Máximo 150 caracteres |
-| fecha | fecha | Obligatoria. Formato `AAAA-MM-DD`, debe ser una fecha real y no puede ser futura |
+| especie | texto | Obligatorio. **Entre 3 y 50 caracteres** (sin contar espacios al inicio o al final). Solo letras, espacios, guiones o apóstrofes, y debe empezar con letra |
+| lugar | texto | Obligatorio (no puede estar vacío ni ser solo espacios). Máximo 150 caracteres |
+| fecha | fecha | Obligatoria. Formato `AAAA-MM-DD`, debe existir en el calendario y **no puede ser posterior a hoy** (hoy sí vale) |
 | observador | texto | Obligatorio. Solo letras, espacios, puntos, guiones o apóstrofes. Máximo 100 caracteres |
 
 ## Endpoints
@@ -127,23 +139,25 @@ curl -i -X DELETE http://localhost:8080/avistamientos/1
 
 Cuando los datos no son válidos, la API responde **400** con un JSON que dice qué campo falló y por qué.
 
-**Datos que no cumplen las reglas** (por ejemplo, una especie con símbolos y una fecha futura):
+**Datos que no cumplen las reglas** (por ejemplo, una especie de 2 letras y una fecha futura):
 ```bash
 curl -i -X POST http://localhost:8080/avistamientos \
   -H "Content-Type: application/json" \
-  -d '{"especie":"------","lugar":"Humedal La Conejera","fecha":"2030-01-01","observador":"Juanita"}'
+  -d '{"especie":"ab","lugar":"Humedal La Conejera","fecha":"2030-01-01","observador":"Juanita"}'
 ```
 Respuesta:
 ```json
 {
-  "especie": "la especie solo puede tener letras, espacios, guiones o apóstrofes, y debe empezar con letra",
-  "fecha": "la fecha no puede ser futura"
+  "especie": "la especie debe tener entre 3 y 50 caracteres",
+  "fecha": "la fecha no puede ser posterior a hoy"
 }
 ```
 
-**JSON mal escrito o fecha que no se puede leer** (por ejemplo, `"fecha": "ayer"` o `"2026-13-45"`):
+Los mensajes posibles para la fecha son: `la fecha es obligatoria`, `la fecha debe tener el formato AAAA-MM-DD` (por ejemplo `"21/10/2026"`), `la fecha no existe en el calendario` (por ejemplo `"2026-13-45"` o `"2026-02-30"`) y `la fecha no puede ser posterior a hoy`.
+
+**JSON mal escrito** (por ejemplo, le falta una llave):
 ```json
-{"error": "El JSON no es válido o algún campo tiene un formato incorrecto (la fecha debe ser AAAA-MM-DD)"}
+{"error": "El cuerpo de la petición no es un JSON válido"}
 ```
 
 Si el `id` no existe (en GET, PUT o DELETE), la respuesta es **404** sin cuerpo.
@@ -181,24 +195,45 @@ Con la base vacía (sin carpeta `data/`), se pueden correr en orden de la 1 a la
 - **PUT reemplaza el avistamiento completo**: por eso valida todos los campos y responde 400 si falta alguno.
 - **DELETE responde 204**: la operación salió bien, pero no hay nada que devolver en el cuerpo.
 - **La URL indica el recurso y el método HTTP indica la acción**: todas las rutas usan `/avistamientos` (en plural) y lo que cambia es GET, POST, PUT o DELETE.
-- **La fecha es `LocalDate` y no texto**: así Java comprueba que sea una fecha real (rechaza `2026-13-45`) y se puede validar que no sea futura. En el JSON se sigue viendo como `"2026-09-29"`.
-- **Las validaciones van en la entidad, no en el controller**: las reglas quedan en un solo lugar y sirven igual para POST y PUT. El `@Valid` del controller es el que las activa.
+- **La regla de negocio vive en su propia clase (`ValidadorDeAvistamiento`)**: no depende de HTTP ni de la base, así que se prueba con pruebas unitarias sin levantar la API. Es la única fuente de la regla: sirve igual para POST y PUT. (Antes las reglas eran anotaciones en la entidad y las activaba el `@Valid` del controller; se cambió para el taller de pruebas.)
+- **La fecha llega como texto y se guarda como `LocalDate`**: el body (`AvistamientoRequest`) trae la fecha como texto para que el validador revise el formato y responda `{"fecha": ...}`. Si llegara directo como `LocalDate`, Jackson la rechazaría antes de validar y el error no diría qué campo falló. Ya validada, el servicio la convierte a `LocalDate` para guardarla.
+- **"Hoy" lo da una interfaz `Reloj`**: en producción es `RelojDelSistema` y en las pruebas un `RelojFijo`. Así la prueba de "fecha de mañana" da lo mismo hoy que dentro de un mes.
+- **Capa de servicio (`AvistamientoService`)**: el controller solo traduce HTTP; el servicio valida, convierte y usa el repositorio. Recibe el repositorio por el constructor, así en las pruebas unitarias se le pasa un doble.
 - **Manejo de errores en una clase aparte** (`ManejadorErrores`, con `@RestControllerAdvice`): los errores también se responden en JSON y dicen qué corregir, sin llenar el controller de `try/catch`.
-- **El contrato OpenAPI se genera desde el código (code-first)**: como la API ya estaba hecha, springdoc lee el controller, la entidad y sus validaciones y arma el contrato solo. Las anotaciones `@Operation`, `@ApiResponse` y `@Schema` solo lo documentan (resúmenes, códigos posibles y ejemplos); no cambian cómo funciona la API.
+- **El contrato OpenAPI se genera desde el código (code-first)**: como la API ya estaba hecha, springdoc lee el controller y los modelos y arma el contrato solo. Las anotaciones `@Operation`, `@ApiResponse` y `@Schema` solo lo documentan (resúmenes, códigos posibles, ejemplos y las reglas de cada campo); no validan ni cambian cómo funciona la API.
 - **El 400 se documenta solo donde puede pasar**: con `springdoc.override-with-generic-response=false` (en `application.properties`), springdoc no le agrega a todos los endpoints los errores del `ManejadorErrores`. Así el contrato no promete un 400 en los GET o el DELETE, que no reciben body y nunca lo devuelven.
 - **El resumen usa un `TreeMap`**: cuenta los avistamientos por especie y los devuelve ordenados alfabéticamente.
 
 ## Pruebas
 
-El proyecto trae 13 pruebas de integración (en `src/test/java`) que llaman a cada endpoint y revisan que responda el código correcto (200, 201, 204, 400 y 404), incluyendo las validaciones y el resumen. Además está la prueba que trae Spring por defecto, que revisa que la aplicación arranque. Usan una base H2 en memoria, así que no tocan los datos de `data/`.
+Hay 41 pruebas en `src/test/java`, en dos niveles:
 
-Para correrlas:
+| Nivel | Clase | Pruebas | Qué prueba |
+|---|---|---|---|
+| Unitaria | `ValidadorDeAvistamientoTest` | 17 | La regla de negocio, con los valores límite (especie de 2, 3, 50 y 51 caracteres; fecha de hoy y de mañana). Usa un `RelojFijo` (stub) |
+| Unitaria | `AvistamientoServiceTest` | 7 | El servicio, con el repositorio reemplazado por un mock de Mockito |
+| Integración | `AvistamientoControllerTest` | 16 | Los endpoints por HTTP con `@SpringBootTest` y MockMvc: códigos 200, 201, 204, 400 y 404, el cuerpo de la respuesta y el efecto en la base |
+| Integración | `AvistamientosApplicationTests` | 1 | Que la aplicación arranque |
+
+Las de integración usan una base H2 en memoria que se vacía antes de cada prueba, así que no tocan los datos de `data/` ni dependen del orden.
+
+**Correr las pruebas:**
 
 | Terminal | Comando |
 |---|---|
 | CMD (Windows) | `mvnw.cmd test` |
 | PowerShell (Windows) | `.\mvnw.cmd test` |
 | Git Bash, Linux o Mac | `./mvnw test` |
+
+**Generar la cobertura (JaCoCo):**
+
+| Terminal | Comando |
+|---|---|
+| CMD (Windows) | `mvnw.cmd verify` |
+| PowerShell (Windows) | `.\mvnw.cmd verify` |
+| Git Bash, Linux o Mac | `./mvnw verify` |
+
+`verify` corre las pruebas y después genera el reporte en `target/site/jacoco/index.html` (se abre con el navegador). El resumen en texto queda en `target/site/jacoco/jacoco.csv`. La lectura del reporte está en la sección 6 de [`docs/justificacion-pruebas.md`](docs/justificacion-pruebas.md).
 
 ## Verificación en un computador limpio
 
@@ -228,4 +263,4 @@ También se probó en Windows con Java 26, desde IntelliJ IDEA y Postman.
 
 ## Uso de IA
 
-Usé Claude (modelo Opus 5.5, de Anthropic) como apoyo para entender los conceptos y guiarme paso a paso en la construcción sobre todo del contrato Openapi y Swagger UI.
+Usé Claude (modelo Opus 5.5, de Anthropic) como apoyo para entender los conceptos y guiarme paso a paso en la construcción sobre todo del contrato Openapi y Swagger UI. En el taller de pruebas (Sesión 22) también lo usé para refactorizar la validación, escribir las pruebas y armar el documento de justificación.

@@ -48,7 +48,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Avistamiento"
+              $ref: "#/components/schemas/AvistamientoRequest"
         required: true
       responses:
         "200":
@@ -64,7 +64,7 @@ paths:
               schema:
                 type: object
               example:
-                fecha: la fecha no puede ser futura
+                fecha: la fecha no puede ser posterior a hoy
         "404":
           description: No existe un avistamiento con ese id
     delete:
@@ -108,7 +108,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Avistamiento"
+              $ref: "#/components/schemas/AvistamientoRequest"
         required: true
       responses:
         "201":
@@ -124,7 +124,7 @@ paths:
               schema:
                 type: object
               example:
-                fecha: la fecha no puede ser futura
+                fecha: la fecha no puede ser posterior a hoy
   /avistamientos/resumen:
     get:
       tags:
@@ -143,6 +143,41 @@ paths:
                   format: int64
 components:
   schemas:
+    AvistamientoRequest:
+      type: object
+      description: Datos para registrar o actualizar un avistamiento
+      properties:
+        especie:
+          type: string
+          description: "Entre 3 y 50 caracteres; solo letras, espacios, guiones o\
+            \ apóstrofes"
+          example: colibri
+          maxLength: 50
+          minLength: 3
+          pattern: "\\p{L}[\\p{L} '-]*"
+        lugar:
+          type: string
+          description: No puede estar vacío
+          example: Humedal La Conejera
+          maxLength: 150
+        fecha:
+          type: string
+          format: date
+          description: "Formato AAAA-MM-DD, debe existir y no puede ser posterior\
+            \ a hoy"
+          example: 2026-09-29
+        observador:
+          type: string
+          description: "No puede estar vacío; solo letras, espacios, puntos, guiones\
+            \ o apóstrofes"
+          example: Juanita
+          maxLength: 100
+          pattern: "\\p{L}[\\p{L} '.-]*"
+      required:
+      - especie
+      - fecha
+      - lugar
+      - observador
     Avistamiento:
       type: object
       properties:
@@ -154,28 +189,15 @@ components:
           readOnly: true
         especie:
           type: string
-          example: colibrí
-          maxLength: 100
-          minLength: 0
-          pattern: "\\p{L}[\\p{L} '-]*"
+          example: colibri
         lugar:
           type: string
           example: Humedal La Conejera
-          maxLength: 150
-          minLength: 0
         fecha:
           type: string
           format: date
-          description: "Formato AAAA-MM-DD, no puede ser futura"
+          description: Formato AAAA-MM-DD
           example: 2026-09-29
         observador:
           type: string
           example: Juanita
-          maxLength: 100
-          minLength: 0
-          pattern: "\\p{L}[\\p{L} '.-]*"
-      required:
-      - especie
-      - fecha
-      - lugar
-      - observador

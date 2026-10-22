@@ -147,6 +147,7 @@ Lo que sigue sin cubrir y por qué lo dejé así:
 
 **Conclusión.** Que haya 97,5 % de ramas no quiere decir que la API esté 97,5 % bien probada. JaCoCo cuenta líneas ejecutadas, no verificadas: una prueba sin ningún `assert` también sube la cobertura. Por ejemplo, `ManejadorErrores` sale en 100 %, pero lo que de verdad muestra que funciona son los `assert` sobre el 400 y el mensaje, y el experimento de la sección 3 donde lo borré y fallaron 5 pruebas. Para mí lo útil del reporte fue ver dónde no había ninguna prueba y decidir caso por caso si eso era un riesgo o no. En el caso del observador sí lo era.
 
-**Imagen**
+**Captura del reporte de JaCoCo** (`target/site/jacoco/index.html`). El reporte redondea los porcentajes hacia abajo: por eso muestra 96 % de instrucciones (14 perdidas de 458) y 97 % de ramas (1 perdida de 40), que en la tabla de arriba aparecen como 96,9 % y 97,5 %. Son los mismos datos.
+
 <img width="1917" height="550" alt="image" src="https://github.com/user-attachments/assets/7ec9a7e3-fd25-452a-a15e-cb432b23082b" />
 

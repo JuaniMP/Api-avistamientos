@@ -146,3 +146,7 @@ Lo que sigue sin cubrir y por qué lo dejé así:
 - **`AvistamientosApplication.main`.** `@SpringBootTest` arranca el contexto sin pasar por el `main`. Son dos líneas que solo llaman a Spring, no vale la pena.
 
 **Conclusión.** Que haya 97,5 % de ramas no quiere decir que la API esté 97,5 % bien probada. JaCoCo cuenta líneas ejecutadas, no verificadas: una prueba sin ningún `assert` también sube la cobertura. Por ejemplo, `ManejadorErrores` sale en 100 %, pero lo que de verdad muestra que funciona son los `assert` sobre el 400 y el mensaje, y el experimento de la sección 3 donde lo borré y fallaron 5 pruebas. Para mí lo útil del reporte fue ver dónde no había ninguna prueba y decidir caso por caso si eso era un riesgo o no. En el caso del observador sí lo era.
+
+**Imagen**
+<img width="1917" height="550" alt="image" src="https://github.com/user-attachments/assets/7ec9a7e3-fd25-452a-a15e-cb432b23082b" />
+

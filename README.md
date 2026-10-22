@@ -254,6 +254,8 @@ Resultado de `./mvnw test`:
 
 También se probó en Windows con Java 26, desde IntelliJ IDEA y Postman.
 
+> Esa verificación es de la versión del 29 de septiembre (14 pruebas). Con el taller de pruebas de la Sesión 22 la suite pasó a 41 pruebas.
+
 ## Problemas comunes
 
 - **`Port 8080 was already in use`**: ya hay otra instancia de la API (u otro programa) usando el puerto. Detener la otra instancia, o levantar esta en otro puerto: `./mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8081`

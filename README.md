@@ -265,4 +265,4 @@ También se probó en Windows con Java 26, desde IntelliJ IDEA y Postman.
 
 ## Uso de IA
 
-Usé Claude (modelo Opus 5.5, de Anthropic) como apoyo para entender los conceptos y guiarme paso a paso en la construcción sobre todo del contrato Openapi y Swagger UI. En el taller de pruebas (Sesión 22) también lo usé para refactorizar la validación, escribir las pruebas y armar el documento de justificación.
+Usé Claude (modelo Opus 5.5, de Anthropic) como apoyo para entender los conceptos y guiarme paso a paso en la construcción sobre todo del contrato Openapi y Swagger UI.

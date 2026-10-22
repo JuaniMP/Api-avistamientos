@@ -101,4 +101,26 @@ No usé **dummy** porque ningún método recibe un parámetro que no se use. Tam
 
 ## 6. Lectura de la cobertura
 
-*(Pendiente: se completa con el reporte de JaCoCo de `mvnw verify`.)*
+Corrí `mvnw.cmd verify` en mi PC (Windows, Java 26). Resultado: 41 pruebas, 0 fallas, y el reporte de JaCoCo quedó en `target/site/jacoco/index.html`. Este es el resumen en texto (`jacoco.csv`):
+
+| Clase | Líneas | Ramas | Instrucciones |
+|---|---|---|---|
+| `AvistamientoService` | 34/34 | 8/8 | 100 % |
+| `ValidadorDeAvistamiento` | 44/49 | 26/30 | 87,4 % |
+| `AvistamientoController` | 12/12 | 2/2 | 100 % |
+| `ManejadorErrores` | 3/3 | — | 100 % |
+| `DatosInvalidosException` | 4/4 | — | 100 % |
+| `Avistamiento` (entidad) | 11/11 | — | 100 % |
+| `AvistamientoRequest` | 1/1 | — | 100 % |
+| `RelojDelSistema` | 1/2 | — | 60 % |
+| `AvistamientosApplication` | 1/3 | — | 37,5 % |
+| **Total** | **111/119 (93,3 %)** | **36/40 (90 %)** | **93,4 %** |
+
+Miré dos criterios de cobertura: **líneas** (qué sentencias se ejecutaron) y **ramas** (si cada `if` se probó por el lado verdadero y por el falso). El de ramas es más exigente: una línea con un `if` puede salir "cubierta" aunque solo se haya probado uno de sus dos caminos. Lo que quedó sin cubrir:
+
+- **`RelojDelSistema.hoy()` (la línea `return LocalDate.now()`) no se ejecutó nunca.** Eso es bueno: confirma que ninguna prueba depende del reloj real, porque todas usan el `RelojFijo`. **No vale la pena** probarla, por lo que expliqué en la sección 5.
+- **`AvistamientosApplication.main`.** `@SpringBootTest` arranca el contexto sin pasar por `main`. Son dos líneas que solo llaman a Spring. **No vale la pena.**
+- **La rama `datos == null` del validador (3 líneas).** Por HTTP no se puede llegar ahí: si el body es `null` o no viene, Spring lanza `HttpMessageNotReadableException` antes de llegar al validador, y la API ya responde 400 (lo probé con curl). La dejé como protección por si otro código llama al validador directamente. Una prueba unitaria sería de tres líneas, pero no protege ningún comportamiento que un usuario de la API pueda ver, así que **no la escribí**.
+- **Las ramas de largo máximo del lugar (150) y del observador (100) y la del formato del observador (4 ramas, 5 líneas).** Es justo lo que decidí no probar en la sección 5, y el reporte lo confirma. Pero al leerlo cambié un poco de opinión sobre una de ellas: si alguien daña la expresión regular del observador, **ninguna prueba lo detectaría**, y esa regla sí la ve el usuario (un 400 con un mensaje). Esa **sí valdría una prueba**, y sería la siguiente que escribiría: un observador como `"Juanita123"` debe dar 400. Las de largo máximo las dejo así porque usan el mismo mecanismo que la especie, que sí está probado con sus límites.
+
+**Lo que concluyo.** El 90 % de ramas no significa que la API esté 90 % bien probada. JaCoCo cuenta líneas **ejecutadas**, no **verificadas**: una prueba sin ningún `assert` subiría la cobertura igual. Por ejemplo, `ManejadorErrores` sale al 100 %, pero lo que de verdad demuestra que funciona son los `assert` sobre el 400 y el mensaje, y el experimento de la sección 3 donde lo borré y fallaron 5 pruebas. Lo útil del reporte fue mostrarme **dónde no hay ninguna prueba** y obligarme a decidir, caso por caso, si eso es un riesgo o no.

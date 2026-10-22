@@ -217,6 +217,8 @@ Hay 47 pruebas en `src/test/java`, en dos niveles:
 
 Las de integración usan una base H2 en memoria que se vacía antes de cada prueba, así que no tocan los datos de `data/` ni dependen del orden.
 
+Cada prueba tiene nombre de especificación (`metodo_condicion_resultadoEsperado`, por ejemplo `validar_especieDe2Caracteres_fallaPorDebajoDelMinimo`) y la estructura AAA marcada con comentarios (`// Arrange`, `// Act`, `// Assert`). En las de integración, el Act guarda la respuesta de MockMvc en una variable y el Assert la revisa después.
+
 **Correr las pruebas:**
 
 | Terminal | Comando |
@@ -233,7 +235,7 @@ Las de integración usan una base H2 en memoria que se vacía antes de cada prue
 | PowerShell (Windows) | `.\mvnw.cmd verify` |
 | Git Bash, Linux o Mac | `./mvnw verify` |
 
-`verify` corre las pruebas y después genera el reporte en `target/site/jacoco/index.html` (se abre con el navegador). El resumen en texto queda en `target/site/jacoco/jacoco.csv`. La lectura del reporte está en la sección 6 de [`docs/justificacion-pruebas.md`](docs/justificacion-pruebas.md).
+`verify` corre las pruebas y después genera el reporte en `target/site/jacoco/index.html` (se abre con el navegador). El resumen en texto queda en `target/site/jacoco/jacoco.csv`. Resultado actual: **95,8 % de líneas** (114 de 119) y **97,5 % de ramas** (39 de 40). La lectura del reporte (qué quedó sin cubrir y por qué) está en la sección 6 de [`docs/justificacion-pruebas.md`](docs/justificacion-pruebas.md).
 
 ## Verificación en un computador limpio
 
@@ -254,7 +256,14 @@ Resultado de `./mvnw test`:
 
 También se probó en Windows con Java 26, desde IntelliJ IDEA y Postman.
 
-> Esa verificación es de la versión del 29 de septiembre (14 pruebas). Con el taller de pruebas de la Sesión 22 la suite pasó a 47 pruebas.
+> Esa verificación es de la versión del 29 de septiembre (14 pruebas).
+
+**Verificación del taller de pruebas (Sesión 22):** en Windows con Java 26, `.\mvnw.cmd verify` corrió las 47 pruebas sin fallas y generó el reporte de JaCoCo:
+```
+[INFO] Tests run: 47, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+```
+Además, la colección de Postman (`docs/avistamientos.postman_collection.json`) se corrió completa contra la API y las 10 peticiones respondieron el código esperado. El contrato `docs/openapi.yaml` es igual al que genera la API en `/v3/api-docs.yaml`.
 
 ## Problemas comunes
 

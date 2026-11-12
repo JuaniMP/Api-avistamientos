@@ -5,7 +5,6 @@ import co.edu.bosque.avistamientos.application.port.in.GestionarAvistamientos;
 import co.edu.bosque.avistamientos.domain.Avistamiento;
 import co.edu.bosque.avistamientos.domain.DatosInvalidosException;
 import co.edu.bosque.avistamientos.application.port.out.RepositorioDeAvistamientos;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -19,7 +18,6 @@ import java.util.TreeMap;
  * (inversión de dependencias): depende de una interfaz propia, no de Spring Data,
  * así en las pruebas unitarias se le puede pasar un doble del repositorio.
  */
-@Service
 public class AvistamientoService implements GestionarAvistamientos {
 
     private final RepositorioDeAvistamientos repositorio;

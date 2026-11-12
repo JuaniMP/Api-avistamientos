@@ -2,7 +2,6 @@ package co.edu.bosque.avistamientos.application.service;
 
 import co.edu.bosque.avistamientos.application.port.in.DatosAvistamiento;
 import co.edu.bosque.avistamientos.application.port.out.Reloj;
-import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -18,7 +17,6 @@ import java.util.TreeMap;
  * No sabe nada de HTTP ni de la base de datos: recibe los datos y devuelve los errores.
  * Por eso se puede probar sin levantar la API.
  */
-@Component
 public class ValidadorDeAvistamiento {
 
     public static final int ESPECIE_MIN = 3;

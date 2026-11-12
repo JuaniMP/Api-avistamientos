@@ -1,6 +1,6 @@
 package co.edu.bosque.avistamientos.application.service;
 
-import co.edu.bosque.avistamientos.adapter.in.web.AvistamientoRequest;
+import co.edu.bosque.avistamientos.application.port.in.DatosAvistamiento;
 import co.edu.bosque.avistamientos.application.port.out.RelojFijo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -29,34 +29,34 @@ class ValidadorDeAvistamientoTest {
     }
 
     // Un avistamiento válido en todo, para cambiarle un solo campo en cada prueba
-    private static AvistamientoRequest valido() {
-        return new AvistamientoRequest("colibri", "Humedal La Conejera", "2026-09-29", "Juanita");
+    private static DatosAvistamiento valido() {
+        return new DatosAvistamiento("colibri", "Humedal La Conejera", "2026-09-29", "Juanita");
     }
 
-    private static AvistamientoRequest conEspecie(String especie) {
-        AvistamientoRequest v = valido();
-        return new AvistamientoRequest(especie, v.lugar(), v.fecha(), v.observador());
+    private static DatosAvistamiento conEspecie(String especie) {
+        DatosAvistamiento v = valido();
+        return new DatosAvistamiento(especie, v.lugar(), v.fecha(), v.observador());
     }
 
-    private static AvistamientoRequest conLugar(String lugar) {
-        AvistamientoRequest v = valido();
-        return new AvistamientoRequest(v.especie(), lugar, v.fecha(), v.observador());
+    private static DatosAvistamiento conLugar(String lugar) {
+        DatosAvistamiento v = valido();
+        return new DatosAvistamiento(v.especie(), lugar, v.fecha(), v.observador());
     }
 
-    private static AvistamientoRequest conObservador(String observador) {
-        AvistamientoRequest v = valido();
-        return new AvistamientoRequest(v.especie(), v.lugar(), v.fecha(), observador);
+    private static DatosAvistamiento conObservador(String observador) {
+        DatosAvistamiento v = valido();
+        return new DatosAvistamiento(v.especie(), v.lugar(), v.fecha(), observador);
     }
 
-    private static AvistamientoRequest conFecha(String fecha) {
-        AvistamientoRequest v = valido();
-        return new AvistamientoRequest(v.especie(), v.lugar(), fecha, v.observador());
+    private static DatosAvistamiento conFecha(String fecha) {
+        DatosAvistamiento v = valido();
+        return new DatosAvistamiento(v.especie(), v.lugar(), fecha, v.observador());
     }
 
     @Test
     void validar_conTodosLosCamposValidos_noDevuelveErrores() {
         // Arrange
-        AvistamientoRequest datos = valido();
+        DatosAvistamiento datos = valido();
 
         // Act
         Map<String, String> errores = validador.validar(datos);
@@ -71,7 +71,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_especieVacia_fallaPorqueEsObligatoria() {
             // Arrange
-            AvistamientoRequest datos = conEspecie("");
+            DatosAvistamiento datos = conEspecie("");
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -84,7 +84,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_especieDe2Caracteres_fallaPorDebajoDelMinimo() {
             // Arrange
-            AvistamientoRequest datos = conEspecie("ab");
+            DatosAvistamiento datos = conEspecie("ab");
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -96,7 +96,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_especieDe3Caracteres_esValidaEnElLimiteInferior() {
             // Arrange
-            AvistamientoRequest datos = conEspecie("abc");
+            DatosAvistamiento datos = conEspecie("abc");
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -108,7 +108,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_especieDe50Caracteres_esValidaEnElLimiteSuperior() {
             // Arrange
-            AvistamientoRequest datos = conEspecie("a".repeat(50));
+            DatosAvistamiento datos = conEspecie("a".repeat(50));
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -120,7 +120,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_especieDe51Caracteres_fallaPorEncimaDelMaximo() {
             // Arrange
-            AvistamientoRequest datos = conEspecie("a".repeat(51));
+            DatosAvistamiento datos = conEspecie("a".repeat(51));
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -132,7 +132,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_especieDe2LetrasRodeadaDeEspacios_fallaPorqueLosEspaciosNoCuentan() {
             // Arrange
-            AvistamientoRequest datos = conEspecie("   ab   ");
+            DatosAvistamiento datos = conEspecie("   ab   ");
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -144,7 +144,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_especieConSimbolos_fallaPorqueSoloAdmiteLetras() {
             // Arrange
-            AvistamientoRequest datos = conEspecie("------");
+            DatosAvistamiento datos = conEspecie("------");
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -161,7 +161,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_fechaPasada_esValida() {
             // Arrange
-            AvistamientoRequest datos = conFecha("2026-09-29");
+            DatosAvistamiento datos = conFecha("2026-09-29");
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -173,7 +173,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_fechaDeHoy_esValidaEnElLimite() {
             // Arrange
-            AvistamientoRequest datos = conFecha("2026-10-21");
+            DatosAvistamiento datos = conFecha("2026-10-21");
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -185,7 +185,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_fechaDeManana_fallaPorqueEsPosteriorAHoy() {
             // Arrange
-            AvistamientoRequest datos = conFecha("2026-10-22");
+            DatosAvistamiento datos = conFecha("2026-10-22");
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -197,7 +197,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_fechaConOtroFormato_fallaPorFormato() {
             // Arrange
-            AvistamientoRequest datos = conFecha("21/10/2026");
+            DatosAvistamiento datos = conFecha("21/10/2026");
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -209,7 +209,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_fechaConFormatoCorrectoQueNoExiste_fallaPorqueNoEstaEnElCalendario() {
             // Arrange
-            AvistamientoRequest datos = conFecha("2026-02-30");
+            DatosAvistamiento datos = conFecha("2026-02-30");
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -221,7 +221,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_fechaNula_fallaPorqueEsObligatoria() {
             // Arrange
-            AvistamientoRequest datos = conFecha(null);
+            DatosAvistamiento datos = conFecha(null);
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -237,7 +237,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_lugarSoloConEspacios_fallaPorqueEsObligatorio() {
             // Arrange
-            AvistamientoRequest datos = new AvistamientoRequest("colibri", "   ", "2026-09-29", "Juanita");
+            DatosAvistamiento datos = new DatosAvistamiento("colibri", "   ", "2026-09-29", "Juanita");
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -250,7 +250,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_observadorVacio_fallaPorqueEsObligatorio() {
             // Arrange
-            AvistamientoRequest datos = new AvistamientoRequest("colibri", "Chingaza", "2026-09-29", "");
+            DatosAvistamiento datos = new DatosAvistamiento("colibri", "Chingaza", "2026-09-29", "");
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -263,7 +263,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_lugarDe150Caracteres_esValidoEnElLimiteSuperior() {
             // Arrange
-            AvistamientoRequest datos = conLugar("a".repeat(150));
+            DatosAvistamiento datos = conLugar("a".repeat(150));
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -275,7 +275,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_lugarDe151Caracteres_fallaPorEncimaDelMaximo() {
             // Arrange
-            AvistamientoRequest datos = conLugar("a".repeat(151));
+            DatosAvistamiento datos = conLugar("a".repeat(151));
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -288,7 +288,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_observadorDe100Caracteres_esValidoEnElLimiteSuperior() {
             // Arrange
-            AvistamientoRequest datos = conObservador("a".repeat(100));
+            DatosAvistamiento datos = conObservador("a".repeat(100));
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -300,7 +300,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_observadorDe101Caracteres_fallaPorEncimaDelMaximo() {
             // Arrange
-            AvistamientoRequest datos = conObservador("a".repeat(101));
+            DatosAvistamiento datos = conObservador("a".repeat(101));
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -313,7 +313,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_observadorConPuntoGuionYApostrofe_esValido() {
             // Arrange
-            AvistamientoRequest datos = conObservador("María-José O'Neil Jr.");
+            DatosAvistamiento datos = conObservador("María-José O'Neil Jr.");
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -325,7 +325,7 @@ class ValidadorDeAvistamientoTest {
         @Test
         void validar_observadorConNumeros_fallaPorqueSoloAdmiteLetras() {
             // Arrange
-            AvistamientoRequest datos = conObservador("Juanita123");
+            DatosAvistamiento datos = conObservador("Juanita123");
 
             // Act
             Map<String, String> errores = validador.validar(datos);
@@ -339,7 +339,7 @@ class ValidadorDeAvistamientoTest {
     @Test
     void validar_variosCamposInvalidos_reportaUnMensajePorCadaCampo() {
         // Arrange
-        AvistamientoRequest datos = new AvistamientoRequest("ab", "", "2026-10-22", null);
+        DatosAvistamiento datos = new DatosAvistamiento("ab", "", "2026-10-22", null);
 
         // Act
         Map<String, String> errores = validador.validar(datos);

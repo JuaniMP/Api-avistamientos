@@ -1,6 +1,7 @@
 package co.edu.bosque.avistamientos.adapter.in.web;
 
-import co.edu.bosque.avistamientos.application.service.AvistamientoService;
+import co.edu.bosque.avistamientos.application.port.in.DatosAvistamiento;
+import co.edu.bosque.avistamientos.application.port.in.GestionarAvistamientos;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -15,8 +16,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Solo traduce entre HTTP y el servicio: no tiene reglas de negocio.
- * Si los datos son inválidos, el servicio lanza DatosInvalidosException y el
+ * Adaptador de entrada (REST). Solo traduce entre HTTP y el puerto de entrada
+ * GestionarAvistamientos: no tiene reglas de negocio y no sabe qué clase implementa el puerto.
+ * Si los datos son inválidos, la aplicación lanza DatosInvalidosException y el
  * ManejadorErrores responde 400.
  */
 @RestController
@@ -24,9 +26,9 @@ import java.util.Map;
 @Tag(name = "Avistamientos", description = "Registro de avistamientos de aves")
 public class AvistamientoController {
 
-    private final AvistamientoService service;
+    private final GestionarAvistamientos service;
 
-    public AvistamientoController(AvistamientoService service) {
+    public AvistamientoController(GestionarAvistamientos service) {
         this.service = service;
     }
 
@@ -61,7 +63,7 @@ public class AvistamientoController {
             content = @Content(mediaType = "application/json", schema = @Schema(type = "object"),
                     examples = @ExampleObject(value = "{\"fecha\": \"la fecha no puede ser posterior a hoy\"}")))
     public ResponseEntity<AvistamientoResponse> crear(@RequestBody AvistamientoRequest datos) {
-        AvistamientoResponse guardado = AvistamientoResponse.desde(service.crear(datos));
+        AvistamientoResponse guardado = AvistamientoResponse.desde(service.crear(aDatos(datos)));
         return ResponseEntity.status(HttpStatus.CREATED).body(guardado);
     }
 
@@ -75,7 +77,7 @@ public class AvistamientoController {
     @ApiResponse(responseCode = "404", description = "No existe un avistamiento con ese id", content = @Content)
     public ResponseEntity<AvistamientoResponse> actualizar(@PathVariable Long id,
                                                            @RequestBody AvistamientoRequest datos) {
-        return ResponseEntity.of(service.actualizar(id, datos).map(AvistamientoResponse::desde));
+        return ResponseEntity.of(service.actualizar(id, aDatos(datos)).map(AvistamientoResponse::desde));
     }
 
 
@@ -88,5 +90,13 @@ public class AvistamientoController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.noContent().build();
+    }
+
+    /** Convierte el JSON recibido en los datos que entiende la aplicación. */
+    private static DatosAvistamiento aDatos(AvistamientoRequest r) {
+        if (r == null) {
+            return null;
+        }
+        return new DatosAvistamiento(r.especie(), r.lugar(), r.fecha(), r.observador());
     }
 }

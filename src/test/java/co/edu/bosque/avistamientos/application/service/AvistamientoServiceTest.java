@@ -1,6 +1,6 @@
 package co.edu.bosque.avistamientos.application.service;
 
-import co.edu.bosque.avistamientos.adapter.in.web.AvistamientoRequest;
+import co.edu.bosque.avistamientos.application.port.in.DatosAvistamiento;
 import co.edu.bosque.avistamientos.domain.Avistamiento;
 import co.edu.bosque.avistamientos.domain.DatosInvalidosException;
 import co.edu.bosque.avistamientos.application.port.out.RelojFijo;
@@ -56,7 +56,7 @@ class AvistamientoServiceTest {
     @Test
     void crear_conDatosValidos_guardaLaEntidadConLosDatosLimpiosYLaFechaConvertida() {
         // Arrange
-        AvistamientoRequest datos = new AvistamientoRequest("  colibri ", "Chingaza", "2026-09-29", "Juanita");
+        DatosAvistamiento datos = new DatosAvistamiento("  colibri ", "Chingaza", "2026-09-29", "Juanita");
         when(repository.guardar(any(Avistamiento.class))).thenAnswer(inv -> inv.getArgument(0));
         ArgumentCaptor<Avistamiento> guardado = ArgumentCaptor.forClass(Avistamiento.class);
 
@@ -72,7 +72,7 @@ class AvistamientoServiceTest {
     @Test
     void crear_conDatosInvalidos_lanzaDatosInvalidosYNoGuardaNada() {
         // Arrange
-        AvistamientoRequest datos = new AvistamientoRequest("ab", "Chingaza", "2026-10-22", "Juanita");
+        DatosAvistamiento datos = new DatosAvistamiento("ab", "Chingaza", "2026-10-22", "Juanita");
 
         // Act
         DatosInvalidosException error = assertThrows(DatosInvalidosException.class, () -> service.crear(datos));
@@ -85,7 +85,7 @@ class AvistamientoServiceTest {
     @Test
     void actualizar_idInexistente_devuelveVacioYNoGuarda() {
         // Arrange
-        AvistamientoRequest datos = new AvistamientoRequest("tucan", "Chingaza", "2026-09-28", "Juanita");
+        DatosAvistamiento datos = new DatosAvistamiento("tucan", "Chingaza", "2026-09-28", "Juanita");
         when(repository.existe(99L)).thenReturn(false);
 
         // Act
@@ -99,7 +99,7 @@ class AvistamientoServiceTest {
     @Test
     void actualizar_idExistente_guardaConElMismoId() {
         // Arrange
-        AvistamientoRequest datos = new AvistamientoRequest("tucan", "Chingaza", "2026-09-28", "Juanita");
+        DatosAvistamiento datos = new DatosAvistamiento("tucan", "Chingaza", "2026-09-28", "Juanita");
         when(repository.existe(5L)).thenReturn(true);
         when(repository.guardar(any(Avistamiento.class))).thenAnswer(inv -> inv.getArgument(0));
 

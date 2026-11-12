@@ -1,6 +1,6 @@
 package co.edu.bosque.avistamientos.application.service;
 
-import co.edu.bosque.avistamientos.adapter.in.web.AvistamientoRequest;
+import co.edu.bosque.avistamientos.application.port.in.DatosAvistamiento;
 import co.edu.bosque.avistamientos.application.port.out.Reloj;
 import org.springframework.stereotype.Component;
 
@@ -40,7 +40,7 @@ public class ValidadorDeAvistamiento {
      * Devuelve un mapa campo -> mensaje con lo que falló.
      * Si el mapa está vacío, el avistamiento es válido.
      */
-    public Map<String, String> validar(AvistamientoRequest datos) {
+    public Map<String, String> validar(DatosAvistamiento datos) {
         Map<String, String> errores = new TreeMap<>();
         if (datos == null) {
             errores.put("avistamiento", "no se recibieron datos");

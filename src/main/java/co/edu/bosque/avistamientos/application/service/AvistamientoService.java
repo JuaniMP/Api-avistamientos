@@ -1,6 +1,7 @@
 package co.edu.bosque.avistamientos.application.service;
 
-import co.edu.bosque.avistamientos.adapter.in.web.AvistamientoRequest;
+import co.edu.bosque.avistamientos.application.port.in.DatosAvistamiento;
+import co.edu.bosque.avistamientos.application.port.in.GestionarAvistamientos;
 import co.edu.bosque.avistamientos.domain.Avistamiento;
 import co.edu.bosque.avistamientos.domain.DatosInvalidosException;
 import co.edu.bosque.avistamientos.application.port.out.RepositorioDeAvistamientos;
@@ -13,13 +14,13 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 /**
- * La lógica de los casos de uso: valida, convierte y guarda.
+ * Implementa el puerto de entrada GestionarAvistamientos: valida, convierte y guarda.
  * Recibe el puerto de salida RepositorioDeAvistamientos y el validador por el constructor
  * (inversión de dependencias): depende de una interfaz propia, no de Spring Data,
  * así en las pruebas unitarias se le puede pasar un doble del repositorio.
  */
 @Service
-public class AvistamientoService {
+public class AvistamientoService implements GestionarAvistamientos {
 
     private final RepositorioDeAvistamientos repositorio;
     private final ValidadorDeAvistamiento validador;
@@ -29,14 +30,17 @@ public class AvistamientoService {
         this.validador = validador;
     }
 
+    @Override
     public List<Avistamiento> listar() {
         return repositorio.buscarTodos();
     }
 
+    @Override
     public Optional<Avistamiento> obtener(Long id) {
         return repositorio.buscarPorId(id);
     }
 
+    @Override
     public Map<String, Long> resumen() {
         Map<String, Long> conteo = new TreeMap<>();
         for (Avistamiento a : repositorio.buscarTodos()) {
@@ -45,14 +49,15 @@ public class AvistamientoService {
         return conteo;
     }
 
-    public Avistamiento crear(AvistamientoRequest datos) {
+    @Override
+    public Avistamiento crear(DatosAvistamiento datos) {
         validarOLanzar(datos);
         Avistamiento nuevo = aDominio(datos);
         return repositorio.guardar(nuevo);
     }
 
-    /** Devuelve vacío si no existe un avistamiento con ese id. */
-    public Optional<Avistamiento> actualizar(Long id, AvistamientoRequest datos) {
+    @Override
+    public Optional<Avistamiento> actualizar(Long id, DatosAvistamiento datos) {
         validarOLanzar(datos);
         if (!repositorio.existe(id)) {
             return Optional.empty();
@@ -62,7 +67,7 @@ public class AvistamientoService {
         return Optional.of(repositorio.guardar(actualizado));
     }
 
-    /** Devuelve false si no existía. */
+    @Override
     public boolean eliminar(Long id) {
         if (!repositorio.existe(id)) {
             return false;
@@ -71,14 +76,14 @@ public class AvistamientoService {
         return true;
     }
 
-    private void validarOLanzar(AvistamientoRequest datos) {
+    private void validarOLanzar(DatosAvistamiento datos) {
         Map<String, String> errores = validador.validar(datos);
         if (!errores.isEmpty()) {
             throw new DatosInvalidosException(errores);
         }
     }
 
-    private Avistamiento aDominio(AvistamientoRequest datos) {
+    private Avistamiento aDominio(DatosAvistamiento datos) {
         Avistamiento a = new Avistamiento();
         a.setEspecie(datos.especie().trim());
         a.setLugar(datos.lugar().trim());

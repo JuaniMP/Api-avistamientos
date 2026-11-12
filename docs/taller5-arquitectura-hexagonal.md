@@ -256,11 +256,12 @@ La rama adicional sin cubrir corresponde a la condición `if (r == null)` del co
 
 ## Referencias
 
-[1] A. Cockburn, "Hexagonal architecture," 2005. [Online]. Available: https://alistair.cockburn.us/hexagonal-architecture/
+[1] Cockburn, A. (2005). Hexagonal architecture. https://alistair.cockburn.us/hexagonal-architecture/ (secciones Intent, Motivation y Nature of the solution).
 
-[2] R. C. Martin, "The Clean Architecture," *The Clean Code Blog*, Aug. 13, 2012. [Online]. Available: https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html
+[2] Martin, R. C. (2012). The Clean Architecture. https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html (artículo corto. El libro de 2017, Clean Architecture, capítulos 22 y 30 a 34, lo
+amplía).
 
-[3] J. Palermo, "The Onion Architecture: part 1," 2008. [Online]. Available: https://jeffreypalermo.com/2008/07/the-onion-architecture-part-1/
+[3] Palermo, J. (2008). The Onion Architecture: part 1. https://jeffreypalermo.com/2008/07/the-onion-architecture-part-1/ (hay partes 2 a 4, opcionales)
 
 [4] R. C. Martin, *Clean Architecture: A Craftsman's Guide to Software Structure and Design*. Upper Saddle River, NJ, USA: Prentice Hall, 2017.
 

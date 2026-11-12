@@ -1,7 +1,7 @@
-package co.edu.bosque.avistamientos.service;
+package co.edu.bosque.avistamientos.application.service;
 
-import co.edu.bosque.avistamientos.dto.AvistamientoRequest;
-import co.edu.bosque.avistamientos.reloj.Reloj;
+import co.edu.bosque.avistamientos.adapter.in.web.AvistamientoRequest;
+import co.edu.bosque.avistamientos.application.port.out.Reloj;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;

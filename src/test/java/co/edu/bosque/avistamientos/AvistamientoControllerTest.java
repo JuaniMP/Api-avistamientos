@@ -1,9 +1,9 @@
 package co.edu.bosque.avistamientos;
 
-import co.edu.bosque.avistamientos.entity.Avistamiento;
-import co.edu.bosque.avistamientos.reloj.Reloj;
-import co.edu.bosque.avistamientos.reloj.RelojFijo;
-import co.edu.bosque.avistamientos.repository.AvistamientoRepository;
+import co.edu.bosque.avistamientos.adapter.out.persistence.Avistamiento;
+import co.edu.bosque.avistamientos.application.port.out.Reloj;
+import co.edu.bosque.avistamientos.application.port.out.RelojFijo;
+import co.edu.bosque.avistamientos.adapter.out.persistence.AvistamientoRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

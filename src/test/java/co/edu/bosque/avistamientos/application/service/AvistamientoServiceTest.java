@@ -1,10 +1,10 @@
-package co.edu.bosque.avistamientos.service;
+package co.edu.bosque.avistamientos.application.service;
 
-import co.edu.bosque.avistamientos.dto.AvistamientoRequest;
-import co.edu.bosque.avistamientos.entity.Avistamiento;
-import co.edu.bosque.avistamientos.exception.DatosInvalidosException;
-import co.edu.bosque.avistamientos.reloj.RelojFijo;
-import co.edu.bosque.avistamientos.repository.AvistamientoRepository;
+import co.edu.bosque.avistamientos.adapter.in.web.AvistamientoRequest;
+import co.edu.bosque.avistamientos.adapter.out.persistence.Avistamiento;
+import co.edu.bosque.avistamientos.domain.DatosInvalidosException;
+import co.edu.bosque.avistamientos.application.port.out.RelojFijo;
+import co.edu.bosque.avistamientos.adapter.out.persistence.AvistamientoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

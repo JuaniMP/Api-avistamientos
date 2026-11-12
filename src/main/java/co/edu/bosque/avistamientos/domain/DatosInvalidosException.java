@@ -1,4 +1,4 @@
-package co.edu.bosque.avistamientos.exception;
+package co.edu.bosque.avistamientos.domain;
 
 import java.util.Collections;
 import java.util.Map;

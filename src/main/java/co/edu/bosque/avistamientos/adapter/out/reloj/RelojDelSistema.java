@@ -1,4 +1,6 @@
-package co.edu.bosque.avistamientos.reloj;
+package co.edu.bosque.avistamientos.adapter.out.reloj;
+
+import co.edu.bosque.avistamientos.application.port.out.Reloj;
 
 import org.springframework.stereotype.Component;
 

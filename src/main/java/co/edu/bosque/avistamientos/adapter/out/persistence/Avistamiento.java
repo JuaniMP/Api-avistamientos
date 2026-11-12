@@ -1,4 +1,4 @@
-package co.edu.bosque.avistamientos.entity;
+package co.edu.bosque.avistamientos.adapter.out.persistence;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Entity;

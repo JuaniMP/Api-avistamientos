@@ -1,4 +1,6 @@
-package co.edu.bosque.avistamientos.exception;
+package co.edu.bosque.avistamientos.adapter.in.web;
+
+import co.edu.bosque.avistamientos.domain.DatosInvalidosException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;

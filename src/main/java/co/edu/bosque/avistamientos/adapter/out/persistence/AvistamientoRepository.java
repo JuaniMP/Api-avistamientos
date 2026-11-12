@@ -1,6 +1,5 @@
-package co.edu.bosque.avistamientos.repository;
+package co.edu.bosque.avistamientos.adapter.out.persistence;
 
-import co.edu.bosque.avistamientos.entity.Avistamiento;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AvistamientoRepository extends JpaRepository<Avistamiento, Long> {

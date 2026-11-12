@@ -1,4 +1,4 @@
-package co.edu.bosque.avistamientos.reloj;
+package co.edu.bosque.avistamientos.application.port.out;
 
 import java.time.LocalDate;
 

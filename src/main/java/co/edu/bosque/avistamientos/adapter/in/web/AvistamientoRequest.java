@@ -1,4 +1,4 @@
-package co.edu.bosque.avistamientos.dto;
+package co.edu.bosque.avistamientos.adapter.in.web;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

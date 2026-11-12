@@ -1,8 +1,7 @@
-package co.edu.bosque.avistamientos.controller;
+package co.edu.bosque.avistamientos.adapter.in.web;
 
-import co.edu.bosque.avistamientos.dto.AvistamientoRequest;
-import co.edu.bosque.avistamientos.entity.Avistamiento;
-import co.edu.bosque.avistamientos.service.AvistamientoService;
+import co.edu.bosque.avistamientos.adapter.out.persistence.Avistamiento;
+import co.edu.bosque.avistamientos.application.service.AvistamientoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;

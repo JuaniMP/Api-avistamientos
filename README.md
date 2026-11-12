@@ -31,29 +31,42 @@ Para detenerla: `Ctrl + C`.
 
 ## Estructura del proyecto
 
+El código está organizado con **arquitectura hexagonal** (puertos y adaptadores) desde el Taller 5. La explicación completa, el diagrama de dependencias y la evidencia antes y después están en [`docs/taller5-arquitectura-hexagonal.md`](docs/taller5-arquitectura-hexagonal.md).
+
 ```
 src/main/java/co/edu/bosque/avistamientos/
 ├── AvistamientosApplication.java           Punto de entrada: arranca la aplicación
-├── entity/Avistamiento.java                Lo que se guarda en la base (tabla avistamiento)
-├── dto/AvistamientoRequest.java            Lo que llega en el body del POST y el PUT (todo como texto)
-├── reloj/Reloj.java                        Interfaz que dice qué día es hoy
-├── reloj/RelojDelSistema.java              El reloj real (LocalDate.now())
-├── service/ValidadorDeAvistamiento.java    La regla de negocio: devuelve qué campos fallaron y por qué
-├── service/AvistamientoService.java        Los casos de uso: valida, convierte y usa el repositorio
-├── repository/AvistamientoRepository.java  Habla con la base de datos (guardar, buscar, borrar)
-├── controller/AvistamientoController.java  Los endpoints: traduce entre HTTP y el servicio
-└── exception/
-    ├── DatosInvalidosException.java        La lanza el servicio cuando el validador encuentra errores
-    └── ManejadorErrores.java               Convierte esos errores en respuestas 400 con mensajes claros
+├── domain/                                 Adentro: no depende de nada
+│   ├── Avistamiento.java                   Modelo de dominio (clase Java pura)
+│   └── DatosInvalidosException.java        Error de negocio: qué campos fallaron y por qué
+├── application/                            Adentro: casos de uso y puertos (sin Spring)
+│   ├── port/in/GestionarAvistamientos.java Puerto de entrada: lo que la API ofrece
+│   ├── port/in/DatosAvistamiento.java      Lo que llega para crear o actualizar (todo como texto)
+│   ├── port/out/RepositorioDeAvistamientos.java  Puerto de salida: guardar y consultar
+│   ├── port/out/Reloj.java                 Puerto de salida: qué día es hoy
+│   ├── service/AvistamientoService.java    Los casos de uso: valida, convierte y usa el repositorio
+│   └── service/ValidadorDeAvistamiento.java La regla de negocio
+├── adapter/                                Afuera: tecnologías concretas
+│   ├── in/web/AvistamientoController.java  Los endpoints: traduce entre HTTP y el puerto de entrada
+│   ├── in/web/AvistamientoRequest.java     El body del POST y el PUT
+│   ├── in/web/AvistamientoResponse.java    El JSON que devuelve la API
+│   ├── in/web/ManejadorErrores.java        Convierte los errores en respuestas 400 con mensajes claros
+│   ├── out/persistence/AdaptadorDePersistencia.java  Implementa el puerto de salida con JPA
+│   ├── out/persistence/AvistamientoEntidadJpa.java   Lo que se guarda en la base (tabla avistamiento)
+│   ├── out/persistence/AvistamientoRepositorioJpa.java  Spring Data
+│   └── out/reloj/RelojDelSistema.java      El reloj real (LocalDate.now())
+└── config/ConfiguracionAplicacion.java     Conecta los adaptadores con el núcleo
 
 src/main/resources/application.properties   Configuración de la base H2 (guardada en archivo)
-src/test/java/.../service/                  Pruebas unitarias del validador y del servicio
-src/test/java/.../reloj/RelojFijo.java      Doble de prueba (stub) del reloj
+src/test/java/.../application/service/      Pruebas unitarias del validador y del servicio
+src/test/java/.../application/port/out/RelojFijo.java  Doble de prueba (stub) del reloj
 src/test/java/.../AvistamientoControllerTest.java  Pruebas de integración de los endpoints por HTTP
 src/test/resources/application.properties   Base H2 en memoria, solo para las pruebas
 docs/openapi.yaml                           Contrato OpenAPI de la API (copia del que genera Swagger)
 docs/avistamientos.postman_collection.json  Colección de Postman con todas las peticiones
 docs/justificacion-pruebas.md               Justificación de las pruebas (taller de la Sesión 22)
+docs/taller5-arquitectura-hexagonal.md      Taller 5: arquitectura hexagonal (investigación y refactor)
+docs/evidencia/                             Capturas de pruebas, cobertura y Postman antes y después del refactor
 ```
 
 ## Modelo
@@ -190,7 +203,7 @@ Con la base vacía (sin carpeta `data/`), se pueden correr en orden de la 1 a la
 
 ## Decisiones de diseño
 
-- **H2 guardada en archivo (`data/`)**: los datos no se pierden al reiniciar la API, y no hay que instalar ni configurar ningún motor de base de datos. La tabla la crea Spring sola a partir de la clase `Avistamiento` (`ddl-auto=update`).
+- **H2 guardada en archivo (`data/`)**: los datos no se pierden al reiniciar la API, y no hay que instalar ni configurar ningún motor de base de datos. La tabla la crea Spring sola a partir de la clase `AvistamientoEntidadJpa` (`ddl-auto=update`).
 - **El `id` lo pone la base**: en el POST se ignora cualquier `id` que venga en el body, para que nadie pueda sobrescribir un avistamiento existente al "crear" uno nuevo.
 - **PUT reemplaza el avistamiento completo**: por eso valida todos los campos y responde 400 si falta alguno.
 - **DELETE responde 204**: la operación salió bien, pero no hay nada que devolver en el cuerpo.
@@ -198,7 +211,8 @@ Con la base vacía (sin carpeta `data/`), se pueden correr en orden de la 1 a la
 - **La regla de negocio vive en su propia clase (`ValidadorDeAvistamiento`)**: no depende de HTTP ni de la base, así que se prueba con pruebas unitarias sin levantar la API. Es la única fuente de la regla: sirve igual para POST y PUT. (Antes las reglas eran anotaciones en la entidad y las activaba el `@Valid` del controller; se cambió para el taller de pruebas.)
 - **La fecha llega como texto y se guarda como `LocalDate`**: el body (`AvistamientoRequest`) trae la fecha como texto para que el validador revise el formato y responda `{"fecha": ...}`. Si llegara directo como `LocalDate`, Jackson la rechazaría antes de validar y el error no diría qué campo falló. Ya validada, el servicio la convierte a `LocalDate` para guardarla.
 - **"Hoy" lo da una interfaz `Reloj`**: en producción es `RelojDelSistema` y en las pruebas un `RelojFijo`. Así la prueba de "fecha de mañana" da lo mismo hoy que dentro de un mes.
-- **Capa de servicio (`AvistamientoService`)**: el controller solo traduce HTTP; el servicio valida, convierte y usa el repositorio. Recibe el repositorio por el constructor, así en las pruebas unitarias se le pasa un doble.
+- **Capa de servicio (`AvistamientoService`)**: el controller solo traduce HTTP; el servicio valida, convierte y usa el repositorio. Recibe el puerto `RepositorioDeAvistamientos` por el constructor, así en las pruebas unitarias se le pasa un doble.
+- **Arquitectura hexagonal**: `domain` y `application` no dependen de Spring, de JPA ni de la web; los adaptadores (`adapter/in/web`, `adapter/out/persistence`, `adapter/out/reloj`) implementan o usan los puertos, y `config/ConfiguracionAplicacion` los conecta.
 - **Manejo de errores en una clase aparte** (`ManejadorErrores`, con `@RestControllerAdvice`): los errores también se responden en JSON y dicen qué corregir, sin llenar el controller de `try/catch`.
 - **El contrato OpenAPI se genera desde el código (code-first)**: como la API ya estaba hecha, springdoc lee el controller y los modelos y arma el contrato solo. Las anotaciones `@Operation`, `@ApiResponse` y `@Schema` solo lo documentan (resúmenes, códigos posibles, ejemplos y las reglas de cada campo); no validan ni cambian cómo funciona la API.
 - **El 400 se documenta solo donde puede pasar**: con `springdoc.override-with-generic-response=false` (en `application.properties`), springdoc no le agrega a todos los endpoints los errores del `ManejadorErrores`. Así el contrato no promete un 400 en los GET o el DELETE, que no reciben body y nunca lo devuelven.

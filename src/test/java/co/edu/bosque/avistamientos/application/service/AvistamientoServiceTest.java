@@ -4,7 +4,7 @@ import co.edu.bosque.avistamientos.adapter.in.web.AvistamientoRequest;
 import co.edu.bosque.avistamientos.adapter.out.persistence.Avistamiento;
 import co.edu.bosque.avistamientos.domain.DatosInvalidosException;
 import co.edu.bosque.avistamientos.application.port.out.RelojFijo;
-import co.edu.bosque.avistamientos.adapter.out.persistence.AvistamientoRepository;
+import co.edu.bosque.avistamientos.application.port.out.RepositorioDeAvistamientos;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,9 +26,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Pruebas UNITARIAS del servicio. El repositorio se reemplaza por un MOCK de Mockito:
- * - como stub, cuando hay que decidir qué responde (findAll, existsById, save);
- * - como mock, cuando lo que importa es verificar si se llamó o no (save, deleteById).
+ * Pruebas UNITARIAS del servicio. El puerto de salida RepositorioDeAvistamientos se reemplaza
+ * por un MOCK de Mockito (no hace falta la base ni Spring):
+ * - como stub, cuando hay que decidir qué responde (buscarTodos, existe, guardar);
+ * - como mock, cuando lo que importa es verificar si se llamó o no (guardar, eliminar).
  * El validador es el real, con un RelojFijo: es lógica en memoria, rápida y determinista,
  * así que no hace falta reemplazarlo.
  */
@@ -36,7 +37,7 @@ import static org.mockito.Mockito.when;
 class AvistamientoServiceTest {
 
     @Mock
-    private AvistamientoRepository repository;
+    private RepositorioDeAvistamientos repository;
 
     private AvistamientoService service;
 
@@ -56,14 +57,14 @@ class AvistamientoServiceTest {
     void crear_conDatosValidos_guardaLaEntidadConLosDatosLimpiosYLaFechaConvertida() {
         // Arrange
         AvistamientoRequest datos = new AvistamientoRequest("  colibri ", "Chingaza", "2026-09-29", "Juanita");
-        when(repository.save(any(Avistamiento.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(repository.guardar(any(Avistamiento.class))).thenAnswer(inv -> inv.getArgument(0));
         ArgumentCaptor<Avistamiento> guardado = ArgumentCaptor.forClass(Avistamiento.class);
 
         // Act
         service.crear(datos);
 
         // Assert
-        verify(repository).save(guardado.capture());
+        verify(repository).guardar(guardado.capture());
         assertThat(guardado.getValue().getEspecie()).isEqualTo("colibri");
         assertThat(guardado.getValue().getFecha()).isEqualTo(LocalDate.of(2026, 9, 29));
     }
@@ -78,29 +79,29 @@ class AvistamientoServiceTest {
 
         // Assert
         assertThat(error.getErrores()).containsOnlyKeys("especie", "fecha");
-        verify(repository, never()).save(any());
+        verify(repository, never()).guardar(any());
     }
 
     @Test
     void actualizar_idInexistente_devuelveVacioYNoGuarda() {
         // Arrange
         AvistamientoRequest datos = new AvistamientoRequest("tucan", "Chingaza", "2026-09-28", "Juanita");
-        when(repository.existsById(99L)).thenReturn(false);
+        when(repository.existe(99L)).thenReturn(false);
 
         // Act
         Optional<Avistamiento> resultado = service.actualizar(99L, datos);
 
         // Assert
         assertThat(resultado).isEmpty();
-        verify(repository, never()).save(any());
+        verify(repository, never()).guardar(any());
     }
 
     @Test
     void actualizar_idExistente_guardaConElMismoId() {
         // Arrange
         AvistamientoRequest datos = new AvistamientoRequest("tucan", "Chingaza", "2026-09-28", "Juanita");
-        when(repository.existsById(5L)).thenReturn(true);
-        when(repository.save(any(Avistamiento.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(repository.existe(5L)).thenReturn(true);
+        when(repository.guardar(any(Avistamiento.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
         Optional<Avistamiento> resultado = service.actualizar(5L, datos);
@@ -114,33 +115,33 @@ class AvistamientoServiceTest {
     @Test
     void eliminar_idInexistente_devuelveFalseYNoBorra() {
         // Arrange
-        when(repository.existsById(99L)).thenReturn(false);
+        when(repository.existe(99L)).thenReturn(false);
 
         // Act
         boolean eliminado = service.eliminar(99L);
 
         // Assert
         assertThat(eliminado).isFalse();
-        verify(repository, never()).deleteById(anyLong());
+        verify(repository, never()).eliminar(anyLong());
     }
 
     @Test
     void eliminar_idExistente_borraEseIdYDevuelveTrue() {
         // Arrange
-        when(repository.existsById(5L)).thenReturn(true);
+        when(repository.existe(5L)).thenReturn(true);
 
         // Act
         boolean eliminado = service.eliminar(5L);
 
         // Assert
         assertThat(eliminado).isTrue();
-        verify(repository).deleteById(5L);
+        verify(repository).eliminar(5L);
     }
 
     @Test
     void resumen_conVariasEspecies_cuentaCuantasVecesApareceCadaUna() {
         // Arrange
-        when(repository.findAll()).thenReturn(List.of(
+        when(repository.buscarTodos()).thenReturn(List.of(
                 avistamiento("colibri"), avistamiento("tucan"), avistamiento("colibri")));
 
         // Act

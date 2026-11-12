@@ -3,7 +3,7 @@ package co.edu.bosque.avistamientos.application.service;
 import co.edu.bosque.avistamientos.adapter.in.web.AvistamientoRequest;
 import co.edu.bosque.avistamientos.adapter.out.persistence.Avistamiento;
 import co.edu.bosque.avistamientos.domain.DatosInvalidosException;
-import co.edu.bosque.avistamientos.adapter.out.persistence.AvistamientoRepository;
+import co.edu.bosque.avistamientos.application.port.out.RepositorioDeAvistamientos;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -14,31 +14,32 @@ import java.util.TreeMap;
 
 /**
  * La lógica de los casos de uso: valida, convierte y guarda.
- * Recibe el repositorio y el validador por el constructor (inversión de dependencias),
+ * Recibe el puerto de salida RepositorioDeAvistamientos y el validador por el constructor
+ * (inversión de dependencias): depende de una interfaz propia, no de Spring Data,
  * así en las pruebas unitarias se le puede pasar un doble del repositorio.
  */
 @Service
 public class AvistamientoService {
 
-    private final AvistamientoRepository repository;
+    private final RepositorioDeAvistamientos repositorio;
     private final ValidadorDeAvistamiento validador;
 
-    public AvistamientoService(AvistamientoRepository repository, ValidadorDeAvistamiento validador) {
-        this.repository = repository;
+    public AvistamientoService(RepositorioDeAvistamientos repositorio, ValidadorDeAvistamiento validador) {
+        this.repositorio = repositorio;
         this.validador = validador;
     }
 
     public List<Avistamiento> listar() {
-        return repository.findAll();
+        return repositorio.buscarTodos();
     }
 
     public Optional<Avistamiento> obtener(Long id) {
-        return repository.findById(id);
+        return repositorio.buscarPorId(id);
     }
 
     public Map<String, Long> resumen() {
         Map<String, Long> conteo = new TreeMap<>();
-        for (Avistamiento a : repository.findAll()) {
+        for (Avistamiento a : repositorio.buscarTodos()) {
             conteo.merge(a.getEspecie(), 1L, Long::sum);
         }
         return conteo;
@@ -47,26 +48,26 @@ public class AvistamientoService {
     public Avistamiento crear(AvistamientoRequest datos) {
         validarOLanzar(datos);
         Avistamiento nuevo = aEntidad(datos);
-        return repository.save(nuevo);
+        return repositorio.guardar(nuevo);
     }
 
     /** Devuelve vacío si no existe un avistamiento con ese id. */
     public Optional<Avistamiento> actualizar(Long id, AvistamientoRequest datos) {
         validarOLanzar(datos);
-        if (!repository.existsById(id)) {
+        if (!repositorio.existe(id)) {
             return Optional.empty();
         }
         Avistamiento actualizado = aEntidad(datos);
         actualizado.setId(id);
-        return Optional.of(repository.save(actualizado));
+        return Optional.of(repositorio.guardar(actualizado));
     }
 
     /** Devuelve false si no existía. */
     public boolean eliminar(Long id) {
-        if (!repository.existsById(id)) {
+        if (!repositorio.existe(id)) {
             return false;
         }
-        repository.deleteById(id);
+        repositorio.eliminar(id);
         return true;
     }
 

@@ -1,4 +1,4 @@
-# Taller 5: Clean Architecture y arquitectura hexagonal aplicadas a la API de avistamientos
+# Taller 5: Arquitectura hexagonal aplicadas a la API de avistamientos
 
 **Asignatura:** Ingeniería de Software 2 (ISW-2), Universidad El Bosque  
 **Autora:** Juanita Mejía Pineda  

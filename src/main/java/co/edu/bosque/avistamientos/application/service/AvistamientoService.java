@@ -1,7 +1,7 @@
 package co.edu.bosque.avistamientos.application.service;
 
 import co.edu.bosque.avistamientos.adapter.in.web.AvistamientoRequest;
-import co.edu.bosque.avistamientos.adapter.out.persistence.Avistamiento;
+import co.edu.bosque.avistamientos.domain.Avistamiento;
 import co.edu.bosque.avistamientos.domain.DatosInvalidosException;
 import co.edu.bosque.avistamientos.application.port.out.RepositorioDeAvistamientos;
 import org.springframework.stereotype.Service;
@@ -47,7 +47,7 @@ public class AvistamientoService {
 
     public Avistamiento crear(AvistamientoRequest datos) {
         validarOLanzar(datos);
-        Avistamiento nuevo = aEntidad(datos);
+        Avistamiento nuevo = aDominio(datos);
         return repositorio.guardar(nuevo);
     }
 
@@ -57,7 +57,7 @@ public class AvistamientoService {
         if (!repositorio.existe(id)) {
             return Optional.empty();
         }
-        Avistamiento actualizado = aEntidad(datos);
+        Avistamiento actualizado = aDominio(datos);
         actualizado.setId(id);
         return Optional.of(repositorio.guardar(actualizado));
     }
@@ -78,7 +78,7 @@ public class AvistamientoService {
         }
     }
 
-    private Avistamiento aEntidad(AvistamientoRequest datos) {
+    private Avistamiento aDominio(AvistamientoRequest datos) {
         Avistamiento a = new Avistamiento();
         a.setEspecie(datos.especie().trim());
         a.setLugar(datos.lugar().trim());

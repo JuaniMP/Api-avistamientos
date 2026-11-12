@@ -1,6 +1,5 @@
 package co.edu.bosque.avistamientos.adapter.in.web;
 
-import co.edu.bosque.avistamientos.adapter.out.persistence.Avistamiento;
 import co.edu.bosque.avistamientos.application.service.AvistamientoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -34,8 +33,8 @@ public class AvistamientoController {
 
     @GetMapping
     @Operation(summary = "Listar todos los avistamientos")
-    public List<Avistamiento> listar() {
-        return service.listar();
+    public List<AvistamientoResponse> listar() {
+        return service.listar().stream().map(AvistamientoResponse::desde).toList();
     }
 
 
@@ -43,8 +42,8 @@ public class AvistamientoController {
     @Operation(summary = "Ver un avistamiento por id")
     @ApiResponse(responseCode = "200", description = "Avistamiento encontrado")
     @ApiResponse(responseCode = "404", description = "No existe un avistamiento con ese id", content = @Content)
-    public ResponseEntity<Avistamiento> obtener(@PathVariable Long id) {
-        return ResponseEntity.of(service.obtener(id));
+    public ResponseEntity<AvistamientoResponse> obtener(@PathVariable Long id) {
+        return ResponseEntity.of(service.obtener(id).map(AvistamientoResponse::desde));
     }
 
 
@@ -61,8 +60,8 @@ public class AvistamientoController {
     @ApiResponse(responseCode = "400", description = "Datos inválidos: dice qué campo falló y por qué",
             content = @Content(mediaType = "application/json", schema = @Schema(type = "object"),
                     examples = @ExampleObject(value = "{\"fecha\": \"la fecha no puede ser posterior a hoy\"}")))
-    public ResponseEntity<Avistamiento> crear(@RequestBody AvistamientoRequest datos) {
-        Avistamiento guardado = service.crear(datos);
+    public ResponseEntity<AvistamientoResponse> crear(@RequestBody AvistamientoRequest datos) {
+        AvistamientoResponse guardado = AvistamientoResponse.desde(service.crear(datos));
         return ResponseEntity.status(HttpStatus.CREATED).body(guardado);
     }
 
@@ -74,9 +73,9 @@ public class AvistamientoController {
             content = @Content(mediaType = "application/json", schema = @Schema(type = "object"),
                     examples = @ExampleObject(value = "{\"fecha\": \"la fecha no puede ser posterior a hoy\"}")))
     @ApiResponse(responseCode = "404", description = "No existe un avistamiento con ese id", content = @Content)
-    public ResponseEntity<Avistamiento> actualizar(@PathVariable Long id,
-                                                   @RequestBody AvistamientoRequest datos) {
-        return ResponseEntity.of(service.actualizar(id, datos));
+    public ResponseEntity<AvistamientoResponse> actualizar(@PathVariable Long id,
+                                                           @RequestBody AvistamientoRequest datos) {
+        return ResponseEntity.of(service.actualizar(id, datos).map(AvistamientoResponse::desde));
     }
 
 

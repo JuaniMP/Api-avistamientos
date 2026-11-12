@@ -1,6 +1,6 @@
 package co.edu.bosque.avistamientos.application.port.out;
 
-import co.edu.bosque.avistamientos.adapter.out.persistence.Avistamiento;
+import co.edu.bosque.avistamientos.domain.Avistamiento;
 
 import java.util.List;
 import java.util.Optional;

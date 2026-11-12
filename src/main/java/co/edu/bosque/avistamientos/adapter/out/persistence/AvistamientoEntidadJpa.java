@@ -1,35 +1,29 @@
 package co.edu.bosque.avistamientos.adapter.out.persistence;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 import java.time.LocalDate;
 
 /**
- * Lo que se guarda en la base. Las reglas de validación ya no viven aquí,
- * sino en ValidadorDeAvistamiento, para poder probarlas sin levantar la API.
+ * Cómo se guarda un avistamiento en la base de datos (JPA). Solo la usa el adaptador
+ * de persistencia; el resto de la aplicación trabaja con domain.Avistamiento.
+ * La tabla se sigue llamando "avistamiento", así los datos que ya existían se conservan.
  */
 @Entity
-public class Avistamiento {
+@Table(name = "avistamiento")
+public class AvistamientoEntidadJpa {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Schema(description = "Lo asigna el sistema", accessMode = Schema.AccessMode.READ_ONLY, example = "1")
     private Long id;
 
-    @Schema(example = "colibri")
     private String especie;
-
-    @Schema(example = "Humedal La Conejera")
     private String lugar;
-
-    @Schema(description = "Formato AAAA-MM-DD", example = "2026-09-29")
     private LocalDate fecha;
-
-    @Schema(example = "Juanita")
     private String observador;
 
     public Long getId() { return id; }

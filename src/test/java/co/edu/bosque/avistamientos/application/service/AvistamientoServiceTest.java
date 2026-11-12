@@ -1,7 +1,7 @@
 package co.edu.bosque.avistamientos.application.service;
 
 import co.edu.bosque.avistamientos.adapter.in.web.AvistamientoRequest;
-import co.edu.bosque.avistamientos.adapter.out.persistence.Avistamiento;
+import co.edu.bosque.avistamientos.domain.Avistamiento;
 import co.edu.bosque.avistamientos.domain.DatosInvalidosException;
 import co.edu.bosque.avistamientos.application.port.out.RelojFijo;
 import co.edu.bosque.avistamientos.application.port.out.RepositorioDeAvistamientos;

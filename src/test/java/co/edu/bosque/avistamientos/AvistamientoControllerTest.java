@@ -1,9 +1,9 @@
 package co.edu.bosque.avistamientos;
 
-import co.edu.bosque.avistamientos.adapter.out.persistence.Avistamiento;
+import co.edu.bosque.avistamientos.adapter.out.persistence.AvistamientoEntidadJpa;
 import co.edu.bosque.avistamientos.application.port.out.Reloj;
 import co.edu.bosque.avistamientos.application.port.out.RelojFijo;
-import co.edu.bosque.avistamientos.adapter.out.persistence.AvistamientoRepository;
+import co.edu.bosque.avistamientos.adapter.out.persistence.AvistamientoRepositorioJpa;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +51,7 @@ class AvistamientoControllerTest {
     private WebApplicationContext context;
 
     @Autowired
-    private AvistamientoRepository repository;
+    private AvistamientoRepositorioJpa repository;
 
     private MockMvc mockMvc;
 
@@ -70,7 +70,7 @@ class AvistamientoControllerTest {
 
     // Guarda un avistamiento directo en la base (sin pasar por la API) y devuelve su id
     private Long guardar(String especie) {
-        Avistamiento a = new Avistamiento();
+        AvistamientoEntidadJpa a = new AvistamientoEntidadJpa();
         a.setEspecie(especie);
         a.setLugar("Humedal La Conejera");
         a.setFecha(LocalDate.of(2026, 9, 29));
@@ -264,7 +264,7 @@ class AvistamientoControllerTest {
         respuesta.andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id));
         assertThat(repository.findById(id)).get()
-                .extracting(Avistamiento::getEspecie).isEqualTo("tucan");
+                .extracting(AvistamientoEntidadJpa::getEspecie).isEqualTo("tucan");
     }
 
     @Test
@@ -281,7 +281,7 @@ class AvistamientoControllerTest {
         respuesta.andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.especie").exists());
         assertThat(repository.findById(id)).get()
-                .extracting(Avistamiento::getEspecie).isEqualTo("colibri");
+                .extracting(AvistamientoEntidadJpa::getEspecie).isEqualTo("colibri");
     }
 
     @Test
